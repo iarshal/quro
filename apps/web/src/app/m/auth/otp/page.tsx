@@ -6,14 +6,14 @@
  * WeChat style 6-digit grouped block.
  */
 
-import { useState, useRef, useEffect } from 'react';
+import { Suspense, useState, useRef, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { createBrowserClient } from '@quro/db'; // Using DB package singleton
 import { MobileButton } from '@/components/MobileButton';
 import styles from './otp.module.css';
 
-export default function MobileOTPPage() {
+function OTPForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get('email');
@@ -162,5 +162,13 @@ export default function MobileOTPPage() {
         </motion.div>
       </main>
     </div>
+  );
+}
+
+export default function MobileOTPPage() {
+  return (
+    <Suspense fallback={<div className={styles.screen}>Loading OTP module...</div>}>
+      <OTPForm />
+    </Suspense>
   );
 }

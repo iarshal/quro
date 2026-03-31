@@ -540,7 +540,7 @@ export default function QuroResponsiveDemo() {
                       console.error('Camera Error:', err);
                       setScanError(true);
                     }}
-                    components={{ audio: false, finder: false, torch: false }}
+                    components={{ audio: false, finder: false, torch: false } as any}
                     styles={{ container: { width: "100%", height: "100%", objectFit: "cover" } }}
                   />
                 ) : (
