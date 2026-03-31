@@ -25,8 +25,7 @@ export default function MobilePhoneScreen() {
     setLoading(true);
 
     try {
-      const { generateOTP } = await import('@quro/crypto');
-      const mockCode = generateOTP();
+      const mockCode = Math.floor(100000 + Math.random() * 900000).toString();
 
       // Store in session storage for the OTP screen to verify (mock flow)
       const fullPhone = `${countryCode} ${phone}`;

@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@quro/db';
-import { generateSessionToken } from '@quro/crypto';
+import { randomUUID } from 'crypto';
 
 /**
  * POST /api/session/create
@@ -14,7 +14,7 @@ import { generateSessionToken } from '@quro/crypto';
 export async function POST() {
   const supabase = createServerClient();
 
-  const token = generateSessionToken();
+  const token = randomUUID();
   const ttlSeconds = parseInt(process.env.NEXT_PUBLIC_QR_SESSION_TTL ?? '300', 10);
   const expiresAt = new Date(Date.now() + ttlSeconds * 1000);
 

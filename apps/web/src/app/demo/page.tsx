@@ -138,7 +138,7 @@ export default function QuroResponsiveDemo() {
           </div>
           <h1 className="text-3xl font-extrabold text-[#111111] tracking-tight mb-2">Authenticated</h1>
           <p className="text-[#999999] text-center mb-8">
-            Your cryptographic keys have been securely synced. Welcome to Quro.
+            Your local session has been securely established. Welcome to Quro.
           </p>
           
           <div className="w-full bg-[#F7F7F7] p-5 rounded-2xl flex items-center gap-4 mb-8">

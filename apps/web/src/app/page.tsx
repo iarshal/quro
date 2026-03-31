@@ -11,7 +11,7 @@ import { useEffect, useState, useRef } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createBrowserClient, getDesktopSessionChannel } from '@quro/db'; // Ensure your DB is correctly wired
-import { generateSessionToken, generateKeyPair } from '@quro/crypto';
+
 import QRCode from 'qrcode';
 
 type AppState = 'unauthenticated' | 'scanning' | 'authenticated';
@@ -32,10 +32,7 @@ export default function DesktopPortalPage() {
     async function initDesktopSession() {
       try {
         // 1. Generate local session key
-        const token = generateSessionToken();
-        const keyPair = await generateKeyPair();
-        
-        sessionStorage.setItem('__QURO_DESKTOP_PRIVATE_KEY__', Buffer.from(keyPair.privateKey).toString('base64url'));
+        const token = crypto.randomUUID();
         
         if (!mounted) return;
         setSessionToken(token);
@@ -234,7 +231,7 @@ export default function DesktopPortalPage() {
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
               </div>
               <h3 className="text-xl font-medium text-gray-400 tracking-tight">Quro Web</h3>
-              <p className="text-sm text-gray-300 mt-2">End-to-end Encrypted Messaging</p>
+              <p className="text-sm text-gray-300 mt-2">Device-Local Messaging Mode</p>
             </motion.div>
           </motion.div>
         )}

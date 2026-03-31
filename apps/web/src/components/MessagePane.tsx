@@ -2,33 +2,31 @@
 'use client';
 
 /**
- * MessagePane — Real-time E2EE message thread
+ * MessagePane — Local Device-Only Chat
  *
- * Features:
- * - Loads historical messages from Supabase (encrypted blobs)
- * - Decrypts them client-side using the shared Curve25519 secret
- * - Subscribes to Supabase Realtime for new incoming messages
- * - Sends new messages: encrypt → insert to DB → Realtime delivers to other party
+ * Modified per architecture mandate to ensure chat *never* leaves the device.
+ * Stores data purely in LocalStorage (No cloud sync, no Supabase, no E2EE).
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { Profile, DecryptedMessage } from '@quro/db';
 import styles from './MessagePane.module.css';
 
 interface MessagePaneProps {
   conversationId: string;
-  otherUser: Profile;
-  currentProfile: Profile;
+  otherUser: { id: string; display_name: string; avatar_url: string | null };
+  currentProfile: { id: string };
 }
 
 export function MessagePane({ conversationId, otherUser, currentProfile }: MessagePaneProps) {
-  const [messages, setMessages] = useState<DecryptedMessage[]>([]);
+  const [messages, setMessages] = useState<any[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const STORAGE_KEY = `quro_chat_local_${conversationId}`;
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -36,171 +34,77 @@ export function MessagePane({ conversationId, otherUser, currentProfile }: Messa
 
   useEffect(() => {
     loadMessages();
-    const unsub = subscribeToMessages();
-    return unsub;
   }, [conversationId]);
 
   useEffect(() => {
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
-  async function loadMessages() {
+  function loadMessages() {
     setLoading(true);
     try {
-      const { createBrowserClient, getMessagesForConversation } = await import('@quro/db');
-      const { decryptMessage, deriveSharedSecret, deserializeKeyPair, fromBase64 } = await import('@quro/crypto');
-
-      const supabase = createBrowserClient();
-      const { data: rawMessages } = await getMessagesForConversation(supabase, conversationId);
-
-      if (!rawMessages) return;
-
-      // Get our stored private key from sessionStorage (set during login)
-      const storedKeys = sessionStorage.getItem('quro_keys');
-      if (!storedKeys) {
-        console.warn('[Quro/chat] No local keys found — messages will show as encrypted');
-        setMessages(rawMessages.map((m) => ({ ...m, plaintext: '[Key not found]', isOwn: m.sender_id === currentProfile.id })));
-        return;
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        setMessages(JSON.parse(stored));
+      } else {
+        // Initial mock message from the other person so it's not empty
+        const initialMock = [{
+          id: `msg-${Date.now()}`,
+          sender_id: otherUser.id,
+          plaintext: "Hey! Our chat is completely local to your device now. No cloud servers.",
+          created_at: new Date().toISOString(),
+          isOwn: false
+        }];
+        setMessages(initialMock);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(initialMock));
       }
-
-      const keyPair = deserializeKeyPair(JSON.parse(storedKeys));
-      const theirPublicKeyBytes = new Uint8Array(Buffer.from(otherUser.public_key, 'base64url'));
-      const sharedSecret = deriveSharedSecret(keyPair.privateKey, theirPublicKeyBytes);
-
-      const decrypted: DecryptedMessage[] = rawMessages.map((m) => {
-        try {
-          const plaintext = decryptMessage(sharedSecret, {
-            ciphertext: m.ciphertext,
-            iv: m.iv,
-            tag: m.tag,
-          });
-          return { ...m, plaintext, isOwn: m.sender_id === currentProfile.id };
-        } catch {
-          return { ...m, plaintext: null, isOwn: m.sender_id === currentProfile.id };
-        }
-      });
-
-      setMessages(decrypted);
     } catch (err) {
-      console.error('[Quro/chat] Failed to load messages:', err);
+      console.error('[Quro/local-chat] Failed to load messages:', err);
     } finally {
       setLoading(false);
     }
   }
 
-  function subscribeToMessages() {
-    let supabase: Awaited<ReturnType<typeof import('@quro/db').createBrowserClient>> | null = null;
-    let channel: ReturnType<typeof supabase.channel> | null = null;
-
-    (async () => {
-      const { createBrowserClient, getChatChannel } = await import('@quro/db');
-      supabase = createBrowserClient();
-
-      channel = supabase
-        .channel(getChatChannel(conversationId))
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'messages',
-            filter: `conversation_id=eq.${conversationId}`,
-          },
-          async (payload) => {
-            const newMsg = payload.new as typeof messages[0];
-
-            // Decrypt the incoming message
-            try {
-              const { decryptMessage, deriveSharedSecret, deserializeKeyPair } = await import('@quro/crypto');
-              const storedKeys = sessionStorage.getItem('quro_keys');
-              if (!storedKeys) return;
-
-              const keyPair = deserializeKeyPair(JSON.parse(storedKeys));
-              const theirPublicKeyBytes = new Uint8Array(Buffer.from(otherUser.public_key, 'base64url'));
-              const sharedSecret = deriveSharedSecret(keyPair.privateKey, theirPublicKeyBytes);
-
-              const plaintext = decryptMessage(sharedSecret, {
-                ciphertext: newMsg.ciphertext,
-                iv: newMsg.iv,
-                tag: newMsg.tag,
-              });
-
-              const decryptedMsg: DecryptedMessage = {
-                ...newMsg,
-                plaintext,
-                isOwn: newMsg.sender_id === currentProfile.id,
-              };
-
-              setMessages((prev) => {
-                // Avoid duplicate if we sent it ourselves
-                if (prev.some((m) => m.id === newMsg.id)) return prev;
-                return [...prev, decryptedMsg];
-              });
-            } catch (err) {
-              console.error('[Quro/chat] Realtime decrypt failed:', err);
-            }
-          }
-        )
-        .subscribe();
-    })();
-
-    return () => {
-      channel?.unsubscribe();
-    };
-  }
-
-  async function sendMessage() {
+  function sendMessage() {
     const text = inputValue.trim();
     if (!text || sending) return;
 
     setSending(true);
     setInputValue('');
 
-    try {
-      const { createBrowserClient } = await import('@quro/db');
-      const { encryptMessage, deriveSharedSecret, deserializeKeyPair } = await import('@quro/crypto');
+    const newMsg = {
+      id: `msg-${Date.now()}`,
+      sender_id: currentProfile.id,
+      plaintext: text,
+      created_at: new Date().toISOString(),
+      isOwn: true,
+    };
 
-      const storedKeys = sessionStorage.getItem('quro_keys');
-      if (!storedKeys) throw new Error('No local keys');
+    const updated = [...messages, newMsg];
+    setMessages(updated);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
 
-      const keyPair = deserializeKeyPair(JSON.parse(storedKeys));
-      const theirPublicKeyBytes = new Uint8Array(Buffer.from(otherUser.public_key, 'base64url'));
-      const sharedSecret = deriveSharedSecret(keyPair.privateKey, theirPublicKeyBytes);
+    // Simulate auto-reply so the local-only UI feels alive
+    simulateReply(updated);
 
-      const { ciphertext, iv, tag } = encryptMessage(sharedSecret, text);
+    setSending(false);
+    inputRef.current?.focus();
+  }
 
-      const supabase = createBrowserClient();
-      const { error } = await supabase.from('messages').insert({
-        conversation_id: conversationId,
-        sender_id: currentProfile.id,
-        ciphertext,
-        iv,
-        tag,
-      });
-
-      if (error) throw error;
-
-      // Optimistically add to local state
-      const optimistic: DecryptedMessage = {
-        id: `optimistic-${Date.now()}`,
-        conversation_id: conversationId,
-        sender_id: currentProfile.id,
-        ciphertext,
-        iv,
-        tag,
+  function simulateReply(history: any[]) {
+    setTimeout(() => {
+      const reply = {
+        id: `reply-${Date.now()}`,
+        sender_id: otherUser.id,
+        plaintext: "Got it! (Auto-replying, this didn't leave your phone)",
         created_at: new Date().toISOString(),
-        plaintext: text,
-        isOwn: true,
+        isOwn: false,
       };
-
-      setMessages((prev) => [...prev, optimistic]);
-    } catch (err) {
-      console.error('[Quro/chat] Failed to send message:', err);
-      setInputValue(text); // Restore on failure
-    } finally {
-      setSending(false);
-      inputRef.current?.focus();
-    }
+      
+      const newHistory = [...history, reply];
+      setMessages(newHistory);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(newHistory));
+    }, 1500);
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -217,14 +121,14 @@ export function MessagePane({ conversationId, otherUser, currentProfile }: Messa
         {otherUser.avatar_url ? (
           <img src={otherUser.avatar_url} alt={otherUser.display_name} className="avatar avatar-md" />
         ) : (
-          <div className={`avatar avatar-md ${styles.avatarPlaceholder}`}>
+          <div className={`avatar avatar-md ${styles.avatarPlaceholder}`} style={{ backgroundColor: 'var(--color-brand)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%'}}>
             {otherUser.display_name.charAt(0).toUpperCase()}
           </div>
         )}
-        <div>
-          <p className={styles.headerName}>{otherUser.display_name}</p>
-          <p className={styles.headerStatus}>
-            <LockIcon /> End-to-End Encrypted
+        <div style={{ marginLeft: 12 }}>
+          <p className={styles.headerName} style={{ margin: 0, fontWeight: 600 }}>{otherUser.display_name}</p>
+          <p className={styles.headerStatus} style={{ margin: 0, fontSize: 13, color: '#34C759', display: 'flex', alignItems: 'center' }}>
+            <LockIcon /> Device-Local (No Server)
           </p>
         </div>
       </div>
@@ -236,27 +140,32 @@ export function MessagePane({ conversationId, otherUser, currentProfile }: Messa
             <div className="animate-spin" style={{ width: 32, height: 32, border: '3px solid var(--color-brand-light)', borderTopColor: 'var(--color-brand)', borderRadius: '50%' }} />
           </div>
         ) : messages.length === 0 ? (
-          <div className={styles.noMessages}>
+          <div className={styles.noMessages} style={{ textAlign: 'center', color: '#999', marginTop: 40 }}>
             <p>No messages yet. Say hello! 👋</p>
           </div>
         ) : (
           <AnimatePresence initial={false}>
-            {messages.map((msg, i) => (
+            {messages.map((msg) => (
               <motion.div
                 key={msg.id}
                 className={`${styles.messageRow} ${msg.isOwn ? styles.ownRow : styles.otherRow}`}
                 initial={{ opacity: 0, y: 8, scale: 0.97 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 transition={{ type: 'spring', damping: 22, stiffness: 260 }}
+                style={{ display: 'flex', flexDirection: 'column', alignItems: msg.isOwn ? 'flex-end' : 'flex-start', margin: '12px 16px' }}
               >
-                <div className={`bubble ${msg.isOwn ? 'bubble--own' : 'bubble--other'}`}>
-                  {msg.plaintext ?? (
-                    <span style={{ opacity: 0.5, fontStyle: 'italic' }}>
-                      [Decryption failed]
-                    </span>
-                  )}
+                <div style={{
+                  padding: '10px 14px',
+                  borderRadius: 18,
+                  backgroundColor: msg.isOwn ? '#07C160' : '#FFF',
+                  color: msg.isOwn ? '#FFF' : '#111',
+                  maxWidth: '75%',
+                  boxShadow: msg.isOwn ? 'none' : '0 1px 2px rgba(0,0,0,0.05)',
+                  wordBreak: 'break-word'
+                }}>
+                  {msg.plaintext}
                 </div>
-                <span className={styles.timestamp}>
+                <span className={styles.timestamp} style={{ fontSize: 11, color: '#CCC', marginTop: 4 }}>
                   {formatMessageTime(msg.created_at)}
                 </span>
               </motion.div>
@@ -267,7 +176,7 @@ export function MessagePane({ conversationId, otherUser, currentProfile }: Messa
       </div>
 
       {/* Input bar */}
-      <div className={styles.inputBar}>
+      <div className={styles.inputBar} style={{ padding: '12px 16px', backgroundColor: '#F7F7F7', borderTop: '1px solid #EBEBEB', display: 'flex', gap: 12 }}>
         <input
           ref={inputRef}
           id="input-message"
@@ -275,9 +184,10 @@ export function MessagePane({ conversationId, otherUser, currentProfile }: Messa
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Message (encrypted locally before sending)"
+          placeholder="Message (stored only on this device)"
           className={styles.messageInput}
           disabled={sending}
+          style={{ flex: 1, padding: '10px 16px', borderRadius: 20, border: 'none', outline: 'none', backgroundColor: '#FFF' }}
         />
         <motion.button
           id="btn-send-message"
@@ -286,8 +196,9 @@ export function MessagePane({ conversationId, otherUser, currentProfile }: Messa
           disabled={!inputValue.trim() || sending}
           whileTap={{ scale: 0.92 }}
           transition={{ type: 'spring', damping: 18, stiffness: 220 }}
+          style={{ width: 40, height: 40, borderRadius: '50%', backgroundColor: inputValue.trim() ? '#07C160' : '#E0E0E0', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
         >
-          <SendIcon />
+          <SendIcon opacity={inputValue.trim() ? 1 : 0.5} />
         </motion.button>
       </div>
     </div>
@@ -304,16 +215,16 @@ function formatMessageTime(iso: string): string {
 
 function LockIcon() {
   return (
-    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style={{ display: 'inline', marginRight: 3 }}>
+    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style={{ display: 'inline', marginRight: 4 }}>
       <rect x="1.5" y="4.5" width="7" height="5" rx="1.5" fill="#34C759" />
       <path d="M3 4.5V3a2 2 0 1 1 4 0v1.5" stroke="#34C759" strokeWidth="1.2" fill="none" />
     </svg>
   );
 }
 
-function SendIcon() {
+function SendIcon({ opacity = 1 }: { opacity?: number }) {
   return (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+    <svg width="18" height="18" viewBox="0 0 20 20" fill="none" style={{ opacity }}>
       <path
         d="M17 10L3 3l3.5 7L3 17l14-7z"
         fill="white"
