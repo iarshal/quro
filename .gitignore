@@ -1,0 +1,49 @@
+# Dependencies & build outputs
+node_modules/
+.next/
+dist/
+build/
+out/
+.expo/
+.expo-shared/
+*.tsbuildinfo
+
+# Environment — NEVER commit real .env files
+.env
+.env.local
+.env.*.local
+apps/web/.env.local
+apps/mobile/.env
+
+# Turbo cache
+.turbo/
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Supabase
+supabase/.branches
+supabase/.temp
+
+# Audio assets (committed separately as binary)
+# apps/mobile/assets/sounds/*.wav — committed to repo
+
+# Native build outputs
+android/
+ios/
+*.apk
+*.ipa
+*.jks
+*.keystore

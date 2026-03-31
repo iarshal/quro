@@ -1,0 +1,133 @@
+.screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-bg);
+  min-height: 100dvh;
+}
+
+.header {
+  padding: var(--space-4) var(--space-6);
+  padding-top: env(safe-area-inset-top, var(--space-8));
+  display: flex;
+  align-items: center;
+}
+
+.backBtn {
+  background: none;
+  border: none;
+  font-size: var(--text-2xl);
+  color: var(--color-text-primary);
+  padding: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.content {
+  flex: 1;
+  padding: 0 var(--space-6);
+  padding-top: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.titleGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.title {
+  font-family: 'Inter', sans-serif;
+  font-weight: 800;
+  font-size: var(--text-2xl);
+  color: var(--color-text-primary);
+  letter-spacing: -0.8px;
+  margin: 0;
+}
+
+.subtitle {
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: var(--text-base);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.inputGroup {
+  display: flex;
+  align-items: center;
+  background-color: var(--color-surface);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.inputGroup:focus-within {
+  background-color: #FFF0EE;
+  box-shadow: 0 0 0 2px var(--color-brand);
+}
+
+.countrySelector {
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-4);
+  border-right: 1px solid var(--color-border);
+  height: 52px;
+}
+
+.countrySelect {
+  background: transparent;
+  border: none;
+  font-family: 'Inter', sans-serif;
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  outline: none;
+  cursor: pointer;
+  -webkit-appearance: none;
+}
+
+.phoneInput {
+  flex: 1;
+  width: 100%;
+  padding: 0 var(--space-4);
+  height: 52px;
+  background: transparent;
+  border: none;
+  font-size: var(--text-xl);
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  outline: none;
+}
+
+.phoneInput::placeholder {
+  color: var(--color-text-disabled);
+}
+
+.footer {
+  padding: var(--space-6);
+  padding-bottom: env(safe-area-inset-bottom, var(--space-8));
+  background-color: transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.emailFallbackBtn {
+  background: none;
+  border: none;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: var(--space-2);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.emailFallbackBtn:active {
+  color: var(--color-brand);
+}

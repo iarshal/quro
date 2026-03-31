@@ -1,0 +1,157 @@
+.screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-bg);
+  min-height: 100vh;
+  position: relative;
+}
+
+.header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: var(--z-overlay);
+  padding: env(safe-area-inset-top, var(--space-8)) var(--space-6) var(--space-4);
+  background: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 100%);
+}
+
+.titleGroup {
+  text-align: center;
+}
+
+.title {
+  font-family: 'Inter', sans-serif;
+  font-weight: 800;
+  font-size: var(--text-2xl);
+  color: #fff;
+  margin: 0;
+}
+
+.subtitle {
+  font-family: 'Inter', sans-serif;
+  font-size: var(--text-sm);
+  color: rgba(255,255,255,0.8);
+  margin: 0;
+}
+
+.cameraContainer {
+  flex: 1;
+  position: relative;
+  background-color: #000;
+  overflow: hidden;
+}
+
+.videoNode {
+  width: 100%;
+  height: 100%;
+  object-fit: cover !important;
+}
+
+/* Hide html5-qrcode's ugly UI elements */
+.videoNode > div:first-child {
+  display: none !important;
+}
+.videoNode > video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover;
+}
+
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Dim background around scanner box */
+  box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+}
+
+.scanBox {
+  width: 250px;
+  height: 250px;
+  position: relative;
+  background-color: transparent;
+}
+
+/* Corner brackets */
+.corner {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  border-color: var(--color-brand);
+  border-style: solid;
+  border-width: 0;
+}
+.tl { top: 0; left: 0; border-top-width: 4px; border-left-width: 4px; border-top-left-radius: 12px; }
+.tr { top: 0; right: 0; border-top-width: 4px; border-right-width: 4px; border-top-right-radius: 12px; }
+.bl { bottom: 0; left: 0; border-bottom-width: 4px; border-left-width: 4px; border-bottom-left-radius: 12px; }
+.br { bottom: 0; right: 0; border-bottom-width: 4px; border-right-width: 4px; border-bottom-right-radius: 12px; }
+
+.scanLine {
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  height: 2px;
+  background-color: var(--color-brand);
+  box-shadow: 0 0 8px var(--color-brandGlow);
+}
+
+.successIndicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 500;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.successCircle {
+  width: 80px;
+  height: 80px;
+  border-radius: var(--radius-circle);
+  background-color: var(--color-success);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  box-shadow: var(--shadow-lg);
+}
+
+.successText {
+  color: #fff;
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: var(--text-lg);
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  margin: 0;
+}
+
+.permissionError {
+  position: absolute;
+  bottom: 20%;
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: #fff;
+  z-index: 500;
+}
+.retryBtn {
+  background-color: rgba(255,255,255,0.2);
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 20px;
+  margin-top: 8px;
+  font-family: 'Inter', sans-serif;
+}

@@ -1,0 +1,15 @@
+/**
+ * App group layout — requires authentication
+ */
+import { Stack } from 'expo-router';
+
+export default function AppLayout() {
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: '#FFFFFF' },
+      }}
+    />
+  );
+}
