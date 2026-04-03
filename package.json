@@ -20,15 +20,18 @@
     "db:types": "supabase gen types typescript --local > packages/db/src/database.types.ts"
   },
   "devDependencies": {
-    "turbo": "^2.3.3",
-    "typescript": "^5.7.0",
     "@types/node": "^22.0.0",
+    "eslint": "^9.0.0",
     "prettier": "^3.4.2",
-    "eslint": "^9.0.0"
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.0"
   },
   "engines": {
-    "node": ">=20.0.0",
+    "node": "22.x",
     "pnpm": ">=9.0.0"
   },
-  "packageManager": "pnpm@9.15.0"
+  "packageManager": "pnpm@10.17.1",
+  "dependencies": {
+    "next": "15.2.4"
+  }
 }

@@ -1,72 +1,85 @@
 /**
- * Quro Web — Global Design System
+ * Quro Web — Global Design System (WeChat-Inspired)
  * Pure Vanilla CSS. No Tailwind. No external frameworks.
  *
  * Architecture:
  *  1. CSS Custom Properties (design tokens)
  *  2. Basic Reset
  *  3. Typography scale
- *  4. Utility classes (minimal, purposeful)
+ *  4. Utility classes
  *  5. Component base styles
- *  6. Animation keyframes
+ *  6. Face Auth animations
+ *  7. WeChat-specific styles
  */
 
-/* ── @font-face (Inter + JetBrains Mono via Google Fonts) ─────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+/* ── Google Fonts ─────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+SC:wght@400;500;700&display=swap');
 
-/* ── Design Tokens ──────────────────────────────────────────────────────────── */
+/* ── Design Tokens (WeChat Green Theme) ─────────────────────────────── */
 :root {
-  /* Brand — Soft Apricot */
-  --color-brand: #FFA488;
-  --color-brand-dark: #E8845F;
-  --color-brand-light: #FFE8D9;
-  --color-brand-glow: rgba(255, 164, 136, 0.35);
+  /* Brand — WeChat Green */
+  --color-brand: #07C160;
+  --color-brand-dark: #06AD56;
+  --color-brand-light: #E8F9EF;
+  --color-brand-glow: rgba(7, 193, 96, 0.35);
 
   /* Base */
   --color-bg: #FFFFFF;
-  --color-surface: #F7F8FA;
-  --color-surface-hover: #F0F1F5;
+  --color-bg-secondary: #F7F7F7;
+  --color-surface: #F7F7F7;
+  --color-surface-hover: #ECECEC;
 
   /* Text */
-  --color-text-primary: #121212;
-  --color-text-secondary: #8E8E93;
-  --color-text-disabled: #C7C7CC;
+  --color-text-primary: #111111;
+  --color-text-secondary: #999999;
+  --color-text-disabled: #CCCCCC;
 
   /* Semantic */
-  --color-success: #34C759;
-  --color-error: #FF3B30;
+  --color-success: #07C160;
+  --color-error: #FA5151;
   --color-warning: #FF9500;
+  --color-info: #10AEFF;
 
   /* Borders */
   --color-border: rgba(0, 0, 0, 0.06);
-  --color-border-focus: #FFA488;
+  --color-border-focus: #07C160;
+
+  /* WeChat Specific */
+  --wechat-green: #07C160;
+  --wechat-bg: #EDEDED;
+  --wechat-header: #F7F7F7;
+  --wechat-bubble-own: #95EC69;
+  --wechat-bubble-other: #FFFFFF;
 
   /* Typography */
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --font-sans: 'Inter', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'SF Mono', 'Fira Code', monospace;
 
   /* Font sizes */
-  --text-xs: 0.6875rem;   /* 11px */
-  --text-sm: 0.8125rem;   /* 13px */
-  --text-base: 0.9375rem; /* 15px */
-  --text-md: 1.0625rem;   /* 17px */
-  --text-lg: 1.25rem;     /* 20px */
-  --text-xl: 1.5rem;      /* 24px */
-  --text-2xl: 1.875rem;   /* 30px */
-  --text-3xl: 2.375rem;   /* 38px */
-  --text-4xl: 3rem;       /* 48px */
+  --text-xs: 0.6875rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.9375rem;
+  --text-md: 1.0625rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 1.875rem;
+  --text-3xl: 2.375rem;
+  --text-4xl: 3rem;
+  --text-5xl: 3.75rem;
+  --text-6xl: 4.5rem;
 
-  /* Spacing (8pt grid) */
-  --space-1: 0.25rem;  /* 4px */
-  --space-2: 0.5rem;   /* 8px */
-  --space-3: 0.75rem;  /* 12px */
-  --space-4: 1rem;     /* 16px */
-  --space-5: 1.25rem;  /* 20px */
-  --space-6: 1.5rem;   /* 24px */
-  --space-8: 2rem;     /* 32px */
-  --space-10: 2.5rem;  /* 40px */
-  --space-12: 3rem;    /* 48px */
-  --space-16: 4rem;    /* 64px */
+  /* Spacing */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
 
   /* Border Radii */
   --radius-sm: 8px;
@@ -75,25 +88,33 @@
   --radius-xl: 28px;
   --radius-2xl: 36px;
   --radius-pill: 999px;
+  --radius-circle: 50%;
 
   /* Shadows */
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
   --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.10);
-  --shadow-brand: 0 4px 24px rgba(255, 164, 136, 0.40);
+  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.12);
+  --shadow-brand: 0 4px 24px rgba(7, 193, 96, 0.30);
 
   /* Transitions */
   --transition-fast: all 0.15s ease;
   --transition-base: all 0.25s ease;
   --transition-slow: all 0.4s ease;
-  --transition-morph: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
 
   /* Layout */
   --sidebar-width: 340px;
-  --header-height: 64px;
+  --header-height: 56px;
+  --tab-bar-height: 56px;
+
+  /* Z-index */
+  --z-base: 1;
+  --z-raised: 10;
+  --z-modal: 100;
+  --z-toast: 200;
 }
 
-/* ── Reset ────────────────────────────────────────────────────────────────── */
+/* ── Reset ───────────────────────────────────────────────────────────── */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -117,61 +138,41 @@ body {
   overflow-x: hidden;
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
-}
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; cursor: pointer; border: none; background: none; }
+input, textarea { font-family: inherit; font-size: inherit; outline: none; border: none; background: none; }
+img { max-width: 100%; height: auto; display: block; }
 
-button {
-  font-family: inherit;
-  cursor: pointer;
-  border: none;
-  background: none;
-}
+/* ── Scrollbar (thin, subtle) ────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: var(--radius-pill); }
 
-input, textarea {
-  font-family: inherit;
-  font-size: inherit;
-  outline: none;
-  border: none;
-  background: none;
-}
-
-img {
-  max-width: 100%;
-  height: auto;
-  display: block;
-}
-
-/* ── Typography Utilities ────────────────────────────────────────────────── */
-.text-primary   { color: var(--color-text-primary); }
-.text-secondary { color: var(--color-text-secondary); }
-.text-brand     { color: var(--color-brand); }
-.text-error     { color: var(--color-error); }
-
-.font-medium    { font-weight: 500; }
-.font-semibold  { font-weight: 600; }
-.font-bold      { font-weight: 700; }
-.font-extrabold { font-weight: 800; }
-.font-mono      { font-family: var(--font-mono); }
-
-/* ── Layout Utilities ────────────────────────────────────────────────────── */
-.flex           { display: flex; }
-.flex-col       { flex-direction: column; }
-.items-center   { align-items: center; }
+/* ── Layout Utilities ────────────────────────────────────────────────── */
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.items-center { align-items: center; }
 .justify-center { justify-content: center; }
 .justify-between { justify-content: space-between; }
-.gap-1          { gap: var(--space-1); }
-.gap-2          { gap: var(--space-2); }
-.gap-3          { gap: var(--space-3); }
-.gap-4          { gap: var(--space-4); }
-.w-full         { width: 100%; }
-.h-full         { height: 100%; }
-.min-h-screen   { min-height: 100vh; }
+.gap-1 { gap: var(--space-1); }
+.gap-2 { gap: var(--space-2); }
+.gap-3 { gap: var(--space-3); }
+.gap-4 { gap: var(--space-4); }
+.w-full { width: 100%; }
+.h-full { height: 100%; }
+.min-h-screen { min-height: 100vh; }
 
-/* ── Component Base Styles ───────────────────────────────────────────────── */
+/* ── Typography Utilities ────────────────────────────────────────────── */
+.text-primary { color: var(--color-text-primary); }
+.text-secondary { color: var(--color-text-secondary); }
+.text-brand { color: var(--color-brand); }
+.text-error { color: var(--color-error); }
+.font-medium { font-weight: 500; }
+.font-semibold { font-weight: 600; }
+.font-bold { font-weight: 700; }
+.font-extrabold { font-weight: 800; }
 
-/* Primary Brand Button */
+/* ── WeChat-Style Button ─────────────────────────────────────────────── */
 .btn-primary {
   display: inline-flex;
   align-items: center;
@@ -182,7 +183,7 @@ img {
   color: #FFFFFF;
   font-size: var(--text-md);
   font-weight: 600;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-sm);
   transition: var(--transition-base);
   box-shadow: var(--shadow-brand);
   cursor: pointer;
@@ -190,26 +191,10 @@ img {
   user-select: none;
   -webkit-tap-highlight-color: transparent;
 }
+.btn-primary:hover { background: var(--color-brand-dark); }
+.btn-primary:active { transform: scale(0.97); }
+.btn-primary:disabled { background: #A0DCBF; box-shadow: none; cursor: not-allowed; }
 
-.btn-primary:hover {
-  background: var(--color-brand-dark);
-  box-shadow: 0 6px 28px rgba(255, 164, 136, 0.50);
-  transform: translateY(-1px);
-}
-
-.btn-primary:active {
-  transform: scale(0.95);
-  box-shadow: var(--shadow-brand);
-}
-
-.btn-primary:disabled {
-  background: var(--color-text-disabled);
-  box-shadow: none;
-  cursor: not-allowed;
-  transform: none;
-}
-
-/* Ghost/Secondary Button */
 .btn-ghost {
   display: inline-flex;
   align-items: center;
@@ -220,239 +205,175 @@ img {
   color: var(--color-text-primary);
   font-size: var(--text-base);
   font-weight: 500;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-sm);
   transition: var(--transition-base);
-  cursor: pointer;
 }
+.btn-ghost:hover { background: var(--color-surface-hover); }
+.btn-ghost:active { transform: scale(0.97); }
 
-.btn-ghost:hover {
-  background: var(--color-surface-hover);
-}
-
-.btn-ghost:active {
-  transform: scale(0.96);
-}
-
-/* Borderless Input */
-.input-field {
-  width: 100%;
-  padding: var(--space-4) var(--space-5);
-  background: var(--color-surface);
-  border-radius: var(--radius-lg);
-  font-size: var(--text-md);
-  color: var(--color-text-primary);
-  transition: var(--transition-fast);
-}
-
-.input-field::placeholder {
-  color: var(--color-text-secondary);
-}
-
-.input-field:focus {
-  background: var(--color-brand-light);
-  box-shadow: 0 0 0 2px var(--color-brand-glow);
-}
-
-/* Card / Surface */
+/* ── Card / Surface ──────────────────────────────────────────────────── */
 .card {
   background: var(--color-bg);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
   padding: var(--space-6);
 }
 
 .surface {
   background: var(--color-surface);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-sm);
   padding: var(--space-4);
 }
 
-/* Avatar */
-.avatar {
-  border-radius: 50%;
-  object-fit: cover;
-  background: var(--color-brand-light);
-  flex-shrink: 0;
+/* ── Avatar ──────────────────────────────────────────────────────────── */
+.avatar { border-radius: var(--radius-sm); object-fit: cover; flex-shrink: 0; }
+.avatar-round { border-radius: 50%; }
+.avatar-sm { width: 36px; height: 36px; }
+.avatar-md { width: 48px; height: 48px; }
+.avatar-lg { width: 64px; height: 64px; }
+.avatar-xl { width: 96px; height: 96px; }
+
+/* ── Chat Bubble (WeChat Style) ──────────────────────────────────────── */
+.bubble {
+  max-width: 72%;
+  padding: 10px 14px;
+  font-size: var(--text-base);
+  line-height: 1.5;
+  word-break: break-word;
+  border-radius: 4px;
+  position: relative;
 }
 
-.avatar-sm  { width: 36px; height: 36px; }
-.avatar-md  { width: 48px; height: 48px; }
-.avatar-lg  { width: 64px; height: 64px; }
-.avatar-xl  { width: 96px; height: 96px; }
-.avatar-2xl { width: 128px; height: 128px; }
+.bubble--own {
+  background: var(--wechat-bubble-own);
+  color: var(--color-text-primary);
+  border-radius: 4px;
+  margin-left: auto;
+}
 
-/* Glassmorphism Modal Overlay */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+.bubble--other {
+  background: var(--wechat-bubble-other);
+  color: var(--color-text-primary);
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+}
+
+/* ── WeChat Menu Item ────────────────────────────────────────────────── */
+.wechat-menu-item {
   display: flex;
   align-items: center;
-  justify-content: center;
-  z-index: 200;
+  padding: 16px 20px;
+  background: #fff;
+  cursor: pointer;
+  transition: background 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.wechat-menu-item:active { background: #ECECEC; }
+.wechat-menu-item + .wechat-menu-item { border-top: 0.5px solid rgba(0,0,0,0.06); }
+
+/* ── WeChat Section Group ────────────────────────────────────────────── */
+.wechat-section {
+  background: #fff;
+  margin-bottom: 8px;
+  border-top: 0.5px solid rgba(0,0,0,0.05);
+  border-bottom: 0.5px solid rgba(0,0,0,0.05);
 }
 
-.modal-content {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-radius: var(--radius-2xl);
-  box-shadow: var(--shadow-lg);
-  padding: var(--space-8);
-  width: 100%;
-  max-width: 480px;
-}
+/* ── Animation Keyframes ─────────────────────────────────────────────── */
 
-/* ── Scrollbar ───────────────────────────────────────────────────────────── */
-::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--color-border);
-  border-radius: var(--radius-pill);
-}
-
-/* ── Animation Keyframes ─────────────────────────────────────────────────── */
-
-/* QR Pulse — the ring that pulses out from the apricot circle on snap */
-@keyframes qr-pulse {
-  0%   { transform: scale(1); opacity: 0.8; }
-  100% { transform: scale(2.2); opacity: 0; }
-}
-
-/* QR Snap — the circle appearing */
-@keyframes qr-snap {
-  0%   { transform: scale(0); opacity: 0; }
-  60%  { transform: scale(1.15); opacity: 1; }
-  100% { transform: scale(1); opacity: 1; }
-}
-
-/* Fade up — content entrance */
-@keyframes fade-up {
-  0%   { opacity: 0; transform: translateY(16px); }
-  100% { opacity: 1; transform: translateY(0); }
-}
-
-/* QR Morph — desktop QR shrinks */
-@keyframes qr-shrink {
-  0%   { transform: scale(1); opacity: 1; }
-  100% { transform: scale(0); opacity: 0; }
-}
-
-/* Avatar reveal */
-@keyframes avatar-reveal {
-  0%   { transform: scale(0.5); opacity: 0; }
-  70%  { transform: scale(1.05); opacity: 1; }
-  100% { transform: scale(1); opacity: 1; }
-}
-
-/* Sidebar slide in */
-@keyframes slide-in-left {
-  0%   { transform: translateX(-100%); opacity: 0; }
-  100% { transform: translateX(0); opacity: 1; }
-}
-
-/* Message pane fade in */
-@keyframes fade-in {
-  0%   { opacity: 0; }
-  100% { opacity: 1; }
-}
-
-/* OTP digit bounce */
-@keyframes digit-bounce {
-  0%, 100% { transform: scaleY(1); }
-  50%       { transform: scaleY(1.2); }
-}
-
-/* Spinner for loading states */
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
 
-.animate-spin {
-  animation: spin 0.8s linear infinite;
+@keyframes fade-up {
+  0% { opacity: 0; transform: translateY(16px); }
+  100% { opacity: 1; transform: translateY(0); }
 }
 
-.animate-fade-up {
-  animation: fade-up 0.5s ease forwards;
+@keyframes fade-in {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
 }
 
-.animate-fade-in {
-  animation: fade-in 0.4s ease forwards;
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.05); opacity: 0.8; }
 }
 
-/* Staggered animation delays */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Face Auth Ring Animation */
+@keyframes face-ring-rotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Confetti burst for verification success */
+@keyframes confetti-rise {
+  0% { transform: translateY(0) rotate(0); opacity: 1; }
+  100% { transform: translateY(-60px) rotate(720deg); opacity: 0; }
+}
+
+/* Douyin dual sphere loader */
+@keyframes douyin-left {
+  0%, 100% { transform: translateX(-12px) scale(1); }
+  50% { transform: translateX(12px) scale(0.8); }
+}
+
+@keyframes douyin-right {
+  0%, 100% { transform: translateX(12px) scale(0.8); }
+  50% { transform: translateX(-12px) scale(1); }
+}
+
+/* Animate utilities */
+.animate-spin { animation: spin 0.8s linear infinite; }
+.animate-fade-up { animation: fade-up 0.5s ease forwards; }
+.animate-fade-in { animation: fade-in 0.4s ease forwards; }
+.animate-pulse { animation: pulse 2s ease-in-out infinite; }
+.animate-float { animation: float 3s ease-in-out infinite; }
+
+/* Stagger delays */
 .delay-100 { animation-delay: 0.1s; }
 .delay-200 { animation-delay: 0.2s; }
 .delay-300 { animation-delay: 0.3s; }
 .delay-400 { animation-delay: 0.4s; }
 
-/* ── OTP Input Specific ──────────────────────────────────────────────────── */
-.otp-input-group {
-  display: flex;
-  gap: var(--space-2);
-  justify-content: center;
+/* ── Landing Page Specific ──────────────────────────────────────────── */
+
+.landing-gradient {
+  background: linear-gradient(135deg, #E8F9EF 0%, #FFFFFF 40%, #F0F7FF 100%);
 }
 
-.otp-digit {
-  width: 52px;
-  height: 64px;
-  text-align: center;
-  font-family: var(--font-mono);
-  font-size: var(--text-2xl);
-  font-weight: 700;
-  color: var(--color-text-primary);
-  background: var(--color-surface);
-  border-radius: var(--radius-lg);
-  border: 2px solid transparent;
-  transition: var(--transition-fast);
-  caret-color: var(--color-brand);
-}
-
-.otp-digit:focus {
-  border-color: var(--color-brand);
-  background: var(--color-brand-light);
-  box-shadow: 0 0 0 4px var(--color-brand-glow);
-  animation: digit-bounce 0.2s ease;
-}
-
-.otp-digit.filled {
-  color: var(--color-brand-dark);
-  border-color: var(--color-brand-light);
-}
-
-/* ── Chat Bubble ─────────────────────────────────────────────────────────── */
-.bubble {
-  max-width: 72%;
-  padding: var(--space-3) var(--space-4);
+.feature-card {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 0, 0, 0.04);
   border-radius: var(--radius-xl);
-  font-size: var(--text-base);
-  line-height: 1.5;
-  word-break: break-word;
+  padding: var(--space-8);
+  transition: var(--transition-base);
+}
+.feature-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
 }
 
-.bubble--own {
-  background: var(--color-brand);
-  color: #FFFFFF;
-  border-bottom-right-radius: var(--radius-sm);
-  margin-left: auto;
+.glass {
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
-.bubble--other {
-  background: var(--color-surface);
-  color: var(--color-text-primary);
-  border-bottom-left-radius: var(--radius-sm);
-}
-
-/* ── Chat Layout ─────────────────────────────────────────────────────────── */
+/* ── Chat Layout ─────────────────────────────────────────────────────── */
 .chat-layout {
   display: flex;
   height: 100vh;
@@ -472,51 +393,15 @@ img {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: var(--color-bg);
+  background: var(--wechat-bg);
   min-width: 0;
 }
 
-/* ── QR Portal Styles ────────────────────────────────────────────────────── */
-.qr-portal {
-  min-height: 100vh;
-  background: var(--color-bg);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-8);
-}
-
-.qr-wrapper {
-  position: relative;
-  padding: var(--space-6);
-  background: var(--color-bg);
-  border-radius: var(--radius-2xl);
-  box-shadow: var(--shadow-lg);
-}
-
-.qr-logo-overlay {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 48px;
-  height: 48px;
-  background: var(--color-bg);
-  border-radius: var(--radius-md);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* ── Responsive ──────────────────────────────────────────────────────────── */
+/* ── Responsive ──────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
-  .chat-sidebar {
-    display: none;
-  }
-
+  .chat-sidebar { display: none; }
   .card {
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-md);
     padding: var(--space-5);
   }
 }

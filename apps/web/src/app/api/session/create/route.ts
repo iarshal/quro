@@ -1,7 +1,10 @@
 // @ts-nocheck
 import { NextResponse } from 'next/server';
-import { createServerClient } from '@quro/db';
 import { randomUUID } from 'crypto';
+import {
+  createServerClient,
+  hasSupabaseServerEnv,
+} from '../../../../lib/server/supabase';
 
 /**
  * POST /api/session/create
@@ -12,11 +15,19 @@ import { randomUUID } from 'crypto';
  * Returns: { token, expiresAt }
  */
 export async function POST() {
-  const supabase = createServerClient();
-
   const token = randomUUID();
   const ttlSeconds = parseInt(process.env.NEXT_PUBLIC_QR_SESSION_TTL ?? '300', 10);
   const expiresAt = new Date(Date.now() + ttlSeconds * 1000);
+
+  if (!hasSupabaseServerEnv()) {
+    return NextResponse.json({
+      token,
+      expiresAt: expiresAt.getTime(),
+      mode: 'local-demo',
+    });
+  }
+
+  const supabase = createServerClient();
 
   const { error } = await supabase.from('desktop_sessions').insert({
     session_token: token,

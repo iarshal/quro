@@ -1,6 +1,9 @@
 // @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@quro/db';
+import {
+  createServerClient,
+  hasSupabaseServerEnv,
+} from '../../../../lib/server/supabase';
 
 /**
  * POST /api/session/activate
@@ -22,6 +25,17 @@ export async function POST(req: NextRequest) {
 
   if (!sessionToken || !authToken) {
     return NextResponse.json({ error: 'Missing parameters' }, { status: 400 });
+  }
+
+  if (!hasSupabaseServerEnv()) {
+    return NextResponse.json({
+      success: true,
+      mode: 'local-demo',
+      deviceInfo: {
+        ...deviceInfo,
+        scannedAt: new Date().toISOString(),
+      },
+    });
   }
 
   // Use service-role client for DB write + Realtime broadcast

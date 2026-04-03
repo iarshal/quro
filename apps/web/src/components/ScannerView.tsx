@@ -1,10 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import jsQR from 'jsqr';
-import { QrCode, Image as ImageIcon } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { playWeChatDing } from '../lib/audioEffects';
 
 type ScanState = 'idle' | 'scanning' | 'detected';
 
@@ -12,47 +9,21 @@ interface ScannerViewProps {
   onPatternDetected?: (payload: string) => void;
 }
 
-// Re-using the Web Audio API synthesizer for the organic WeChat Beep
-function playWeChatDing() {
-  if (typeof window === 'undefined') return;
-  try {
-    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioContext) return;
-    const ctx = new AudioContext();
-    const osc = ctx.createOscillator();
-    const gainNode = ctx.createGain();
-    
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(880, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(1320, ctx.currentTime + 0.1); 
-    
-    gainNode.gain.setValueAtTime(0, ctx.currentTime);
-    gainNode.gain.linearRampToValueAtTime(0.4, ctx.currentTime + 0.05);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
-    
-    osc.connect(gainNode);
-    gainNode.connect(ctx.destination);
-    
-    osc.start();
-    osc.stop(ctx.currentTime + 0.3);
-  } catch (e) {
-    console.warn('Audio not supported', e);
-  }
-}
+type JsQRModule = typeof import('jsqr');
 
 export function ScannerView({ onPatternDetected }: ScannerViewProps) {
-  const router = useRouter();
-  
   const [scanState, setScanState] = useState<ScanState>('idle');
   const [snapCoord, setSnapCoord] = useState<{ x: number; y: number } | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
-  
+  const [isLoadingScanner, setIsLoadingScanner] = useState(false);
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const requestRef = useRef<number>(0);
   const streamRef = useRef<MediaStream | null>(null);
+  const jsQRRef = useRef<JsQRModule['default'] | null>(null);
+  const hasDetectedRef = useRef(false);
 
-  // Stop camera tracks cleanly
   const stopCamera = useCallback(() => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
@@ -60,262 +31,298 @@ export function ScannerView({ onPatternDetected }: ScannerViewProps) {
     }
     if (requestRef.current) {
       cancelAnimationFrame(requestRef.current);
+      requestRef.current = 0;
     }
   }, []);
 
   useEffect(() => {
-    // Cleanup on unmount
     return () => stopCamera();
   }, [stopCamera]);
 
-  // Main QR Detection Loop
-  const tick = useCallback(() => {
+  const ensureScannerLib = useCallback(async () => {
+    if (jsQRRef.current) return jsQRRef.current;
+    const module = await import('jsqr');
+    jsQRRef.current = module.default;
+    return jsQRRef.current;
+  }, []);
+
+  const tick = useCallback(async () => {
     if (scanState !== 'scanning') return;
-    
+
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    
-    if (video && canvas && video.readyState === video.HAVE_ENOUGH_DATA) {
-      // Set canvas size equal to the viewable screen feed
+    const jsQR = jsQRRef.current;
+
+    if (!video || !canvas || !jsQR) {
+      requestRef.current = requestAnimationFrame(() => {
+        void tick();
+      });
+      return;
+    }
+
+    if (video.readyState === video.HAVE_ENOUGH_DATA) {
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
+
       const ctx = canvas.getContext('2d', { willReadFrequently: true });
       if (ctx) {
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        
-        // Scan with jsQR
         const code = jsQR(imageData.data, imageData.width, imageData.height, {
           inversionAttempts: 'dontInvert',
         });
-        
-        if (code && code.data) {
-          // Detected! Stop loop.
+
+        if (code?.data) {
+          if (hasDetectedRef.current) {
+            return;
+          }
+          hasDetectedRef.current = true;
           setScanState('detected');
           stopCamera();
-          
-          // Math - calculate exact center of the mapped QR
-          // `location` coordinates are based on the video rendering dimensions.
-          // Because the video has object-fit: cover, this maps roughly unless there's heavy crop.
+
           const { topLeftCorner: tl, topRightCorner: tr, bottomLeftCorner: bl, bottomRightCorner: br } = code.location;
-          
-          // Get the centroid of the quadrilateral
           const cX = (tl.x + tr.x + bl.x + br.x) / 4;
           const cY = (tl.y + tr.y + bl.y + br.y) / 4;
-          
-          // We need physical CSS pixels. Let's find rendering ratio
-          const videoElementRect = video.getBoundingClientRect();
-          // video element covers full screen. Let's assume proportional scaling
-          const renderRatio = Math.max(
-            videoElementRect.width / canvas.width,
-            videoElementRect.height / canvas.height
-          );
-          
-          // Approximate the mapped screen coordinate
-          const screenX = videoElementRect.left + (cX * renderRatio);
-          const screenY = videoElementRect.top + (cY * renderRatio);
-          
-          setSnapCoord({ x: screenX, y: screenY });
-          
+          const rect = video.getBoundingClientRect();
+          const renderRatio = Math.max(rect.width / canvas.width, rect.height / canvas.height);
+
+          setSnapCoord({
+            x: rect.left + cX * renderRatio,
+            y: rect.top + cY * renderRatio,
+          });
+
           playWeChatDing();
 
-          // Report outward 0.5s after animation finishes
-          setTimeout(() => {
-            if (onPatternDetected) onPatternDetected(code.data);
+          window.setTimeout(() => {
+            onPatternDetected?.(code.data);
           }, 800);
-          
-          return; // Stop requesting frames
+
+          return;
         }
       }
     }
-    requestRef.current = requestAnimationFrame(tick);
-  }, [scanState, stopCamera, onPatternDetected]);
+
+    requestRef.current = requestAnimationFrame(() => {
+      void tick();
+    });
+  }, [onPatternDetected, scanState, stopCamera]);
 
   useEffect(() => {
-    if (scanState === 'scanning') {
-      requestRef.current = requestAnimationFrame(tick);
-    }
+    if (scanState !== 'scanning') return;
+
+    requestRef.current = requestAnimationFrame(() => {
+      void tick();
+    });
+
     return () => {
-      if (requestRef.current) cancelAnimationFrame(requestRef.current);
+      if (requestRef.current) {
+        cancelAnimationFrame(requestRef.current);
+        requestRef.current = 0;
+      }
     };
   }, [scanState, tick]);
 
-  const startScanner = async () => {
+  async function startScanner() {
+    if (isLoadingScanner) return;
+
     try {
-      // Prompt user for Camera AND initialize AudioContext
-      playWeChatDing(); // Playing a silent hit unlocks audio ctx
-      
+      hasDetectedRef.current = false;
+      setIsLoadingScanner(true);
+      setCameraError(null);
+
+      await ensureScannerLib();
+
+      if (!navigator.mediaDevices?.getUserMedia) {
+        throw new Error('Camera is not supported on this browser.');
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' }
+        video: {
+          facingMode: { ideal: 'environment' },
+        },
       });
-      
+
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        videoRef.current.setAttribute('playsinline', 'true'); // required to tell iOS safari we don't want fullscreen
-        videoRef.current.play();
+        videoRef.current.setAttribute('playsinline', 'true');
+        await videoRef.current.play();
       }
+
       setScanState('scanning');
-      setCameraError(null);
-    } catch (err) {
-      console.error('Camera access denied:', err);
+    } catch (error) {
+      console.error('Scanner startup failed:', error);
       setCameraError('Camera access denied or unavailable.');
+      stopCamera();
+    } finally {
+      setIsLoadingScanner(false);
     }
-  };
+  }
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100dvh', backgroundColor: '#000', overflow: 'hidden' }}>
-      
-      {/* 1. Underlying Camera Feed */}
+      <style>{`
+        @keyframes scan-line {
+          0% { transform: translateY(-8px); opacity: 0; }
+          12% { opacity: 1; }
+          88% { opacity: 1; }
+          100% { transform: translateY(268px); opacity: 0; }
+        }
+      `}</style>
+
       <video
         ref={videoRef}
         muted
         playsInline
         style={{
           position: 'absolute',
-          top: 0,
-          left: 0,
+          inset: 0,
           width: '100%',
           height: '100%',
           objectFit: 'cover',
-          opacity: scanState !== 'idle' ? 1 : 0,
-          transition: 'opacity 0.3s'
+          opacity: scanState === 'idle' ? 0 : 1,
+          transition: 'opacity 0.25s ease',
         }}
       />
       <canvas ref={canvasRef} style={{ display: 'none' }} />
 
-      {/* 2. State 1: Interstitial (Idle) */}
-      <AnimatePresence>
-        {scanState === 'idle' && (
-          <motion.div 
-            initial={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+      {scanState === 'idle' && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 20,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: '#000',
+            padding: 24,
+            textAlign: 'center',
+          }}
+        >
+          <div style={{ width: 72, height: 72, borderRadius: 24, background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}>
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 7V4h3" />
+              <path d="M17 4h3v3" />
+              <path d="M20 17v3h-3" />
+              <path d="M7 20H4v-3" />
+              <path d="M9 9h6v6H9z" />
+            </svg>
+          </div>
+          <h2 style={{ color: '#fff', fontSize: 22, fontWeight: 700, margin: 0 }}>QR Scanner</h2>
+          <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: 14, margin: '10px 0 24px' }}>
+            Scan Quro QR codes and desktop login codes
+          </p>
+          {cameraError && (
+            <p style={{ color: '#FF6B6B', fontSize: 13, marginBottom: 16 }}>
+              {cameraError}
+            </p>
+          )}
+          <button
+            onClick={startScanner}
+            style={{
+              backgroundColor: '#07C160',
+              color: '#fff',
+              padding: '14px 32px',
+              borderRadius: 12,
+              border: 'none',
+              fontSize: 16,
+              fontWeight: 700,
+              cursor: 'pointer',
+              minWidth: 220,
+              boxShadow: '0 10px 24px rgba(7,193,96,0.25)',
+            }}
+          >
+            {isLoadingScanner ? 'Starting Camera...' : 'Tap to Start Scanner'}
+          </button>
+        </div>
+      )}
+
+      {(scanState === 'scanning' || scanState === 'detected') && (
+        <>
+          <div
             style={{
               position: 'absolute',
               inset: 0,
-              zIndex: 50,
+              pointerEvents: 'none',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              backgroundColor: '#000',
             }}
           >
-            <QrCode size={64} color="#666" style={{ marginBottom: 24 }} />
-            <h2 style={{ color: '#fff', fontSize: '1.25rem', fontWeight: 600, marginBottom: 8 }}>QR Scanner</h2>
-            <p style={{ color: '#aaa', fontSize: '0.875rem', marginBottom: 32 }}>Camera access required</p>
-            {cameraError && <p style={{ color: '#ff4d4f', marginBottom: 16 }}>{cameraError}</p>}
-            
-            <button 
-              onClick={startScanner}
+            <div
               style={{
-                backgroundColor: '#07C160',
-                color: '#fff',
-                padding: '14px 32px',
-                borderRadius: '8px',
-                border: 'none',
-                fontSize: '1rem',
-                fontWeight: 600,
-                cursor: 'pointer'
+                width: 260,
+                height: 260,
+                position: 'relative',
+                overflow: 'hidden',
+                marginBottom: 80,
+                boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.6)',
               }}
             >
-              Tap to Start Scanner
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              <div style={{ position: 'absolute', top: 0, left: 0, width: 24, height: 24, borderTop: '3px solid #07C160', borderLeft: '3px solid #07C160' }} />
+              <div style={{ position: 'absolute', top: 0, right: 0, width: 24, height: 24, borderTop: '3px solid #07C160', borderRight: '3px solid #07C160' }} />
+              <div style={{ position: 'absolute', bottom: 0, left: 0, width: 24, height: 24, borderBottom: '3px solid #07C160', borderLeft: '3px solid #07C160' }} />
+              <div style={{ position: 'absolute', bottom: 0, right: 0, width: 24, height: 24, borderBottom: '3px solid #07C160', borderRight: '3px solid #07C160' }} />
 
-      {/* 3. The WeChat Overlay (Active when scanning or detected) */}
-      {(scanState === 'scanning' || scanState === 'detected') && (
-        <React.Fragment>
-          {/* Viewfinder Mask Area */}
-          <div style={{
-            position: 'absolute',
-            inset: 0,
-            pointerEvents: 'none',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center' // Actually WeChat usually anchors it a bit higher, but flex-start with margin works too. Let's do exact center but offset slightly.
-          }}>
-            <div style={{
-              width: 260,
-              height: 260,
-              boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.6)',
-              position: 'relative', // for the scan line
-              overflow: 'hidden',
-              marginBottom: 80 // offset slightly upwards
-            }}>
-              {/* Corner Embellishments (WeChat white brackets) */}
-              <div style={{ position: 'absolute', top: 0, left: 0, width: 20, height: 20, borderTop: '3px solid #07C160', borderLeft: '3px solid #07C160' }} />
-              <div style={{ position: 'absolute', top: 0, right: 0, width: 20, height: 20, borderTop: '3px solid #07C160', borderRight: '3px solid #07C160' }} />
-              <div style={{ position: 'absolute', bottom: 0, left: 0, width: 20, height: 20, borderBottom: '3px solid #07C160', borderLeft: '3px solid #07C160' }} />
-              <div style={{ position: 'absolute', bottom: 0, right: 0, width: 20, height: 20, borderBottom: '3px solid #07C160', borderRight: '3px solid #07C160' }} />
-              
-              {/* Sweeping Green Line */}
-              <AnimatePresence>
-                {scanState === 'scanning' && (
-                  <motion.div
-                    initial={{ top: '-10%' }}
-                    animate={{ top: '110%' }}
-                    transition={{ duration: 2.5, repeat: Infinity, ease: 'linear' }}
-                    style={{
-                      position: 'absolute',
-                      left: 0,
-                      width: '100%',
-                      height: 2,
-                      background: 'linear-gradient(to right, transparent, #07C160, transparent)',
-                      boxShadow: '0 0 8px 1px #07C160'
-                    }}
-                  />
-                )}
-              </AnimatePresence>
+              {scanState === 'scanning' && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: 0,
+                    width: '100%',
+                    height: 2,
+                    background: 'linear-gradient(to right, transparent, #07C160, transparent)',
+                    boxShadow: '0 0 8px 1px #07C160',
+                    animation: 'scan-line 2.5s linear infinite',
+                  }}
+                />
+              )}
             </div>
-            
-            {/* The Typography directly below clear square */}
-            <p style={{
-              marginTop: -60, // pull up into the offset margin gap
-              fontSize: '13px',
-              color: 'rgba(255,255,255,0.7)',
-              letterSpacing: '1px'
-            }}>
-              识别二维码 / 花草 / 动物 / 商品等
+
+            <p
+              style={{
+                marginTop: -60,
+                fontSize: 13,
+                color: 'rgba(255,255,255,0.72)',
+                letterSpacing: '1px',
+              }}
+            >
+              Point the QR code inside the frame
             </p>
           </div>
-          
-          {/* Bottom Action Bar */}
-          <div style={{
-            position: 'absolute',
-            bottom: 40,
-            left: 0,
-            right: 0,
-            display: 'flex',
-            justifyContent: 'space-evenly',
-            padding: '0 40px'
-          }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 44, height: 44, borderRadius: '50%', backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <QrCode color="#fff" size={20} />
-              </div>
-              <span style={{ color: '#fff', fontSize: '11px' }}>我的二维码</span>
-            </div>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 44, height: 44, borderRadius: '50%', backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <ImageIcon color="#fff" size={20} />
-              </div>
-              <span style={{ color: '#fff', fontSize: '11px' }}>相册</span>
+
+          <div
+            style={{
+              position: 'absolute',
+              bottom: 40,
+              left: 0,
+              right: 0,
+              display: 'flex',
+              justifyContent: 'center',
+            }}
+          >
+            <div
+              style={{
+                padding: '12px 18px',
+                borderRadius: 999,
+                background: 'rgba(0,0,0,0.5)',
+                color: '#fff',
+                fontSize: 13,
+                fontWeight: 600,
+                border: '1px solid rgba(255,255,255,0.16)',
+              }}
+            >
+              Scanning...
             </div>
           </div>
-        </React.Fragment>
+        </>
       )}
 
-      {/* 4. The Soft Apricot Center Snap Orb */}
       {snapCoord && scanState === 'detected' && (
-        <motion.div
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: [0, 1.2, 1], opacity: 1 }}
-          transition={{ duration: 0.2, ease: "easeOut" }}
+        <div
           style={{
             position: 'absolute',
             left: snapCoord.x - 20,
@@ -323,14 +330,13 @@ export function ScannerView({ onPatternDetected }: ScannerViewProps) {
             width: 40,
             height: 40,
             borderRadius: '50%',
-            backgroundColor: '#07C160',  // WeChat green
+            backgroundColor: '#07C160',
             border: '3px solid #fff',
             boxShadow: '0 2px 10px rgba(0,0,0,0.3)',
-            zIndex: 100
+            zIndex: 100,
           }}
         />
       )}
-
     </div>
   );
 }

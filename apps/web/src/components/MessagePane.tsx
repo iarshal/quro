@@ -2,15 +2,12 @@
 'use client';
 
 /**
- * MessagePane — Local Device-Only Chat
- *
- * Modified per architecture mandate to ensure chat *never* leaves the device.
- * Stores data purely in LocalStorage (No cloud sync, no Supabase, no E2EE).
+ * MessagePane — WeChat-style local chat
+ * All messages stored in localStorage, never leave the device.
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import styles from './MessagePane.module.css';
 
 interface MessagePaneProps {
   conversationId: string;
@@ -22,7 +19,6 @@ export function MessagePane({ conversationId, otherUser, currentProfile }: Messa
   const [messages, setMessages] = useState<any[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [sending, setSending] = useState(false);
-  const [loading, setLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -33,42 +29,27 @@ export function MessagePane({ conversationId, otherUser, currentProfile }: Messa
   }, []);
 
   useEffect(() => {
-    loadMessages();
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      setMessages(JSON.parse(stored));
+    } else {
+      const initial = [{
+        id: `msg-${Date.now()}`,
+        sender_id: otherUser.id,
+        plaintext: "Hey! Our chat is completely local to your device. 🔐",
+        created_at: new Date().toISOString(),
+        isOwn: false,
+      }];
+      setMessages(initial);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(initial));
+    }
   }, [conversationId]);
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, scrollToBottom]);
-
-  function loadMessages() {
-    setLoading(true);
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        setMessages(JSON.parse(stored));
-      } else {
-        // Initial mock message from the other person so it's not empty
-        const initialMock = [{
-          id: `msg-${Date.now()}`,
-          sender_id: otherUser.id,
-          plaintext: "Hey! Our chat is completely local to your device now. No cloud servers.",
-          created_at: new Date().toISOString(),
-          isOwn: false
-        }];
-        setMessages(initialMock);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(initialMock));
-      }
-    } catch (err) {
-      console.error('[Quro/local-chat] Failed to load messages:', err);
-    } finally {
-      setLoading(false);
-    }
-  }
+  useEffect(() => { scrollToBottom(); }, [messages, scrollToBottom]);
 
   function sendMessage() {
     const text = inputValue.trim();
     if (!text || sending) return;
-
     setSending(true);
     setInputValue('');
 
@@ -83,28 +64,8 @@ export function MessagePane({ conversationId, otherUser, currentProfile }: Messa
     const updated = [...messages, newMsg];
     setMessages(updated);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-
-    // Simulate auto-reply so the local-only UI feels alive
-    simulateReply(updated);
-
     setSending(false);
     inputRef.current?.focus();
-  }
-
-  function simulateReply(history: any[]) {
-    setTimeout(() => {
-      const reply = {
-        id: `reply-${Date.now()}`,
-        sender_id: otherUser.id,
-        plaintext: "Got it! (Auto-replying, this didn't leave your phone)",
-        created_at: new Date().toISOString(),
-        isOwn: false,
-      };
-      
-      const newHistory = [...history, reply];
-      setMessages(newHistory);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newHistory));
-    }, 1500);
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -115,123 +76,102 @@ export function MessagePane({ conversationId, otherUser, currentProfile }: Messa
   }
 
   return (
-    <div className={styles.pane}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Header */}
-      <div className={styles.header}>
-        {otherUser.avatar_url ? (
-          <img src={otherUser.avatar_url} alt={otherUser.display_name} className="avatar avatar-md" />
-        ) : (
-          <div className={`avatar avatar-md ${styles.avatarPlaceholder}`} style={{ backgroundColor: 'var(--color-brand)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%'}}>
-            {otherUser.display_name.charAt(0).toUpperCase()}
-          </div>
-        )}
-        <div style={{ marginLeft: 12 }}>
-          <p className={styles.headerName} style={{ margin: 0, fontWeight: 600 }}>{otherUser.display_name}</p>
-          <p className={styles.headerStatus} style={{ margin: 0, fontSize: 13, color: '#34C759', display: 'flex', alignItems: 'center' }}>
-            <LockIcon /> Device-Local (No Server)
-          </p>
+      <div style={{
+        height: 56, padding: '0 16px',
+        borderBottom: '1px solid rgba(0,0,0,0.06)',
+        display: 'flex', alignItems: 'center', gap: 12,
+        backgroundColor: '#EDEDED',
+      }}>
+        <div style={{
+          width: 36, height: 36, borderRadius: 8,
+          backgroundColor: '#07C160', color: '#fff',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontWeight: 600, fontSize: 14,
+        }}>
+          {otherUser.display_name.charAt(0).toUpperCase()}
+        </div>
+        <div>
+          <p style={{ fontSize: 15, fontWeight: 600, color: '#111' }}>{otherUser.display_name}</p>
+          <p style={{ fontSize: 11, color: '#07C160' }}>🔒 Device-Local</p>
         </div>
       </div>
 
-      {/* Message list */}
-      <div className={styles.messageList} id="message-list">
-        {loading ? (
-          <div className={styles.loadingCenter}>
-            <div className="animate-spin" style={{ width: 32, height: 32, border: '3px solid var(--color-brand-light)', borderTopColor: 'var(--color-brand)', borderRadius: '50%' }} />
-          </div>
-        ) : messages.length === 0 ? (
-          <div className={styles.noMessages} style={{ textAlign: 'center', color: '#999', marginTop: 40 }}>
-            <p>No messages yet. Say hello! 👋</p>
-          </div>
-        ) : (
-          <AnimatePresence initial={false}>
-            {messages.map((msg) => (
-              <motion.div
-                key={msg.id}
-                className={`${styles.messageRow} ${msg.isOwn ? styles.ownRow : styles.otherRow}`}
-                initial={{ opacity: 0, y: 8, scale: 0.97 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ type: 'spring', damping: 22, stiffness: 260 }}
-                style={{ display: 'flex', flexDirection: 'column', alignItems: msg.isOwn ? 'flex-end' : 'flex-start', margin: '12px 16px' }}
-              >
-                <div style={{
-                  padding: '10px 14px',
-                  borderRadius: 18,
-                  backgroundColor: msg.isOwn ? '#07C160' : '#FFF',
-                  color: msg.isOwn ? '#FFF' : '#111',
-                  maxWidth: '75%',
-                  boxShadow: msg.isOwn ? 'none' : '0 1px 2px rgba(0,0,0,0.05)',
-                  wordBreak: 'break-word'
-                }}>
-                  {msg.plaintext}
-                </div>
-                <span className={styles.timestamp} style={{ fontSize: 11, color: '#CCC', marginTop: 4 }}>
-                  {formatMessageTime(msg.created_at)}
-                </span>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        )}
+      {/* Messages */}
+      <div style={{
+        flex: 1, overflowY: 'auto', padding: '16px',
+        backgroundColor: '#EDEDED',
+      }}>
+        <AnimatePresence initial={false}>
+          {messages.map(msg => (
+            <motion.div
+              key={msg.id}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              style={{
+                display: 'flex', flexDirection: 'column',
+                alignItems: msg.isOwn ? 'flex-end' : 'flex-start',
+                marginBottom: 12,
+              }}
+            >
+              <div style={{
+                padding: '10px 14px',
+                borderRadius: 4,
+                backgroundColor: msg.isOwn ? '#95EC69' : '#fff',
+                color: '#111',
+                maxWidth: '75%',
+                wordBreak: 'break-word',
+                fontSize: 15,
+                boxShadow: '0 1px 1px rgba(0,0,0,0.04)',
+              }}>
+                {msg.plaintext}
+              </div>
+              <span style={{ fontSize: 11, color: '#CCC', marginTop: 4 }}>
+                {new Date(msg.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+              </span>
+            </motion.div>
+          ))}
+        </AnimatePresence>
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input bar */}
-      <div className={styles.inputBar} style={{ padding: '12px 16px', backgroundColor: '#F7F7F7', borderTop: '1px solid #EBEBEB', display: 'flex', gap: 12 }}>
+      {/* Input */}
+      <div style={{
+        padding: '10px 12px',
+        backgroundColor: '#F7F7F7',
+        borderTop: '1px solid rgba(0,0,0,0.06)',
+        display: 'flex', gap: 10, alignItems: 'center',
+      }}>
         <input
           ref={inputRef}
-          id="input-message"
           type="text"
           value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
+          onChange={e => setInputValue(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Message (stored only on this device)"
-          className={styles.messageInput}
-          disabled={sending}
-          style={{ flex: 1, padding: '10px 16px', borderRadius: 20, border: 'none', outline: 'none', backgroundColor: '#FFF' }}
+          placeholder="Type a message..."
+          style={{
+            flex: 1, padding: '10px 14px',
+            backgroundColor: '#fff', borderRadius: 6,
+            fontSize: 15, color: '#111',
+          }}
         />
         <motion.button
-          id="btn-send-message"
-          className={styles.sendBtn}
-          onClick={sendMessage}
-          disabled={!inputValue.trim() || sending}
           whileTap={{ scale: 0.92 }}
-          transition={{ type: 'spring', damping: 18, stiffness: 220 }}
-          style={{ width: 40, height: 40, borderRadius: '50%', backgroundColor: inputValue.trim() ? '#07C160' : '#E0E0E0', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+          onClick={sendMessage}
+          disabled={!inputValue.trim()}
+          style={{
+            width: 36, height: 36, borderRadius: 6,
+            backgroundColor: inputValue.trim() ? '#07C160' : '#A0DCBF',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: inputValue.trim() ? 'pointer' : 'default',
+          }}
         >
-          <SendIcon opacity={inputValue.trim() ? 1 : 0.5} />
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+            <path d="M17 10L3 3l3.5 7L3 17l14-7z" fill="white" stroke="white" strokeWidth="0.5" strokeLinejoin="round"/>
+          </svg>
         </motion.button>
       </div>
     </div>
-  );
-}
-
-function formatMessageTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  });
-}
-
-function LockIcon() {
-  return (
-    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style={{ display: 'inline', marginRight: 4 }}>
-      <rect x="1.5" y="4.5" width="7" height="5" rx="1.5" fill="#34C759" />
-      <path d="M3 4.5V3a2 2 0 1 1 4 0v1.5" stroke="#34C759" strokeWidth="1.2" fill="none" />
-    </svg>
-  );
-}
-
-function SendIcon({ opacity = 1 }: { opacity?: number }) {
-  return (
-    <svg width="18" height="18" viewBox="0 0 20 20" fill="none" style={{ opacity }}>
-      <path
-        d="M17 10L3 3l3.5 7L3 17l14-7z"
-        fill="white"
-        stroke="white"
-        strokeWidth="0.5"
-        strokeLinejoin="round"
-      />
-    </svg>
   );
 }

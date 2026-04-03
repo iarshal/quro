@@ -4,26 +4,26 @@ import './globals.css';
 export const metadata: Metadata = {
   manifest: '/manifest.json',
   title: {
-    default: 'Quro — Secure QR Messaging',
+    default: 'Quro — Face-First Secure Messaging',
     template: '%s | Quro',
   },
   description:
-    'Quro is a hyper-secure, QR-first messaging platform with End-to-End Encryption. Log in to any device instantly by scanning a QR code — no passwords, ever.',
-  keywords: ['qr messaging', 'e2ee', 'secure chat', 'quro', 'encrypted messaging'],
+    'Quro is a face-authenticated, device-local messaging platform. No passwords, no phone numbers — just your face. All data stays on your device.',
+  keywords: ['face auth', 'qr messaging', 'secure chat', 'quro', 'wechat alternative', 'face verification'],
   authors: [{ name: 'Quro' }],
   creator: 'Quro',
   openGraph: {
     type: 'website',
     locale: 'en_US',
     url: 'https://quro.app',
-    title: 'Quro — Secure QR Messaging',
-    description: 'Log into any device by scanning a QR code. End-to-End Encrypted.',
+    title: 'Quro — Face-First Secure Messaging',
+    description: 'Login with your face. Chat locally. No cloud, no passwords.',
     siteName: 'Quro',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Quro — Secure QR Messaging',
-    description: 'Log into any device by scanning a QR code. End-to-End Encrypted.',
+    title: 'Quro — Face-First Secure Messaging',
+    description: 'Login with your face. Chat locally. No cloud, no passwords.',
   },
   robots: { index: true, follow: true },
 };
@@ -32,7 +32,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
-  themeColor: '#FFA488',
+  themeColor: '#07C160',
 };
 
 export default function RootLayout({

@@ -1,23 +1,19 @@
 {
   "name": "@quro/web",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "NODE_OPTIONS='--no-deprecation' next dev ",
     "build": "next build",
+    "vercel-build": "next build",
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@noble/ciphers": "^1.2.1",
-    "@noble/curves": "^1.7.0",
-    "@noble/hashes": "^1.7.0",
-    "@quro/db": "workspace:*",
-    "@quro/ui": "workspace:*",
-    "@supabase/ssr": "^0.6.0",
     "@supabase/supabase-js": "^2.47.0",
-    "@yudiel/react-qr-scanner": "^2.5.1",
+    "encoding": "^0.1.13",
+    "face-api.js": "^0.22.2",
     "framer-motion": "^11.18.0",
     "jsqr": "^1.4.0",
     "lucide-react": "^1.7.0",
@@ -32,6 +28,7 @@
     "@types/qrcode": "^1.5.5",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "gh-pages": "^6.3.0",
     "typescript": "^5.7.0"
   }
 }

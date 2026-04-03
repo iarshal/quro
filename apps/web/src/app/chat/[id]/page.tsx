@@ -1,11 +1,15 @@
-// @ts-nocheck
-import { MessagePane } from '@/components/MessagePane';
+import { MessagePane } from '../../../components/MessagePane';
 
-export default async function ChatThreadPage({
+export default function ChatThreadPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 }) {
-  const resolvedParams = await params;
-  return <MessagePane conversationId={resolvedParams.id} />;
+  return (
+    <MessagePane
+      conversationId={params.id}
+      otherUser={{ id: params.id, display_name: 'Secure Contact', avatar_url: null }}
+      currentProfile={{ id: 'local-user' }}
+    />
+  );
 }

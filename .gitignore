@@ -47,3 +47,5 @@ ios/
 *.ipa
 *.jks
 *.keystore
+.vercel
+.env*.local

@@ -7,7 +7,7 @@
  * redirect unauthenticated users to the QR portal.
  */
 
-import { ChatLayout } from '@/components/ChatLayout';
+import { ChatLayout } from '../../components/ChatLayout';
 
 // Mock profile for development — replaced by session data in production
 const MOCK_PROFILE = {

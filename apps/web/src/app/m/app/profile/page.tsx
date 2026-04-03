@@ -1,150 +1,210 @@
+// @ts-nocheck
 'use client';
 
 /**
- * Mobile "Me" / Profile Tab for PWA
- * Matches the WeChat "Me" section with iOS styling and DB integration.
+ * WeChat-Style "Me" Profile Tab (NO emojis — SVG icons only)
  */
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { QrCode, MonitorSmartphone, Settings, Bell, ChevronRight } from 'lucide-react';
-import { createBrowserClient } from '@quro/db';
-import styles from './profile.module.css';
-
-interface ProfileData {
-  display_name: string;
-  quro_id: string;
-  gender: 'male' | 'female' | 'other' | 'prefer_not' | null;
-  avatar_url: string | null;
-}
+import { getFaceData, type QuroProfile } from '../../../../lib/faceStore';
+import { clearSession, getSession } from '../../../../lib/localSession';
+import { generatePersonalQR } from '../../../../lib/qrUtils';
 
 export default function MobileMePage() {
   const router = useRouter();
-  const [profile, setProfile] = useState<ProfileData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState<QuroProfile | null>(null);
+  const [qrSrc, setQrSrc] = useState('');
+  const [showQR, setShowQR] = useState(false);
 
   useEffect(() => {
-    async function loadProfile() {
-      try {
-        const supabase = createBrowserClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-        
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('display_name, quro_id, gender, avatar_url')
-          .eq('id', user.id)
-          .single();
-          
-        if (data) setProfile(data);
-      } catch (err) {
-        console.error('Failed to load profile', err);
-      } finally {
-        setLoading(false);
+    async function load() {
+      const session = getSession();
+      if (!session) { router.replace('/m/welcome'); return; }
+      const data = await getFaceData();
+      if (data) {
+        setProfile(data);
+        const qr = await generatePersonalQR(data.quroId);
+        setQrSrc(qr);
       }
     }
-    loadProfile();
-  }, []);
+    load();
+  }, [router]);
 
-  async function handleLogout() {
-    const supabase = createBrowserClient();
-    await supabase.auth.signOut();
-    sessionStorage.removeItem('__QURO_ID__');
-    router.replace('/m/welcome');
-  }
-
-  // Generate Gender Badge SVG based on profile
-  const renderGenderBadge = () => {
-    if (!profile?.gender || profile.gender === 'prefer_not' || profile.gender === 'other') return null;
-    
-    const isMale = profile.gender === 'male';
-    const bgColor = isMale ? '#e3f2fd' : '#fce4ec';
-    const color = isMale ? '#1e88e5' : '#e91e63';
-    const icon = isMale ? '♂' : '♀';
-
-    return (
-      <span style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: '16px',
-        height: '16px',
-        borderRadius: '50%',
-        backgroundColor: bgColor,
-        color: color,
-        fontSize: '10px',
-        fontWeight: 'bold',
-        marginLeft: '6px',
-        verticalAlign: 'middle'
-      }}>
-        {icon}
-      </span>
-    );
+  const genderInfo: Record<string, { label: string; color: string; bg: string }> = {
+    male: { label: 'M', color: '#3B82F6', bg: '#EFF6FF' },
+    female: { label: 'F', color: '#EC4899', bg: '#FDF2F8' },
+    transgender: { label: 'T', color: '#8B5CF6', bg: '#F5F3FF' },
+    other: { label: 'O', color: '#F59E0B', bg: '#FFFBEB' },
   };
 
-  if (loading) return <div className={styles.screen} />;
+  function handleLogout() {
+    clearSession();
+    router.replace('/');
+  }
+
+  if (!profile) return <div style={{ height: '100dvh', backgroundColor: '#EDEDED' }} />;
+
+  const gender = genderInfo[profile.gender] || genderInfo.other;
+
+  const menuItems = [
+    {
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#07C160" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          <path d="m9 12 2 2 4-4"/>
+        </svg>
+      ),
+      label: 'Security Center',
+      action: () => router.push('/m/app/security'),
+    },
+    {
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="1.8" strokeLinecap="round">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+        </svg>
+      ),
+      label: 'Favorites',
+      action: () => {},
+    },
+    {
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="1.8" strokeLinecap="round">
+          <circle cx="12" cy="12" r="3"/><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+        </svg>
+      ),
+      label: 'Settings',
+      action: () => {},
+    },
+  ];
 
   return (
-    <div className={styles.screen}>
-      <header className={styles.header}>
-        <h1 className={styles.title}>Me</h1>
-      </header>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#EDEDED', overflowY: 'auto' }}>
+      {/* Profile Card */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        style={{
+          backgroundColor: '#fff', padding: '60px 20px 20px',
+          display: 'flex', alignItems: 'center', cursor: 'pointer',
+        }}
+        onClick={() => setShowQR(true)}
+      >
+        <div style={{
+          width: 64, height: 64, borderRadius: 12, overflow: 'hidden', marginRight: 16,
+          flexShrink: 0, backgroundColor: '#E8F9EF',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          {profile.avatarDataUrl ? (
+            <img src={profile.avatarDataUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          ) : (
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#07C160" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+            </svg>
+          )}
+        </div>
 
-      <main className={styles.content}>
-        {/* Profile Card */}
-        <motion.div 
-          className={styles.profileCard}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+            <h2 style={{ fontSize: 20, fontWeight: 700, color: '#111', letterSpacing: '-0.3px' }}>
+              {profile.displayName}
+            </h2>
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              width: 20, height: 20, borderRadius: '50%',
+              backgroundColor: gender.bg, color: gender.color,
+              fontSize: 11, fontWeight: 700,
+            }}>
+              {gender.label}
+            </span>
+          </div>
+          <p style={{ fontSize: 14, color: '#999' }}>Quro ID: quro_{profile.quroId}</p>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, opacity: 0.4 }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="1.5">
+            <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+            <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+          </svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#CCC" strokeWidth="2">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </div>
+      </motion.div>
+
+      {/* Menu Sections */}
+      <div style={{ marginTop: 8 }}>
+        {menuItems.map((item, i) => (
+          <div key={i} className="wechat-section" style={i > 0 ? { borderTop: 'none', marginTop: 0 } : {}}>
+            <button className="wechat-menu-item" onClick={item.action} style={{ width: '100%' }}>
+              <span style={{ marginRight: 16, display: 'flex' }}>{item.icon}</span>
+              <div style={{ flex: 1, textAlign: 'left' }}>
+                <span style={{ fontSize: 16, fontWeight: 500, color: '#111' }}>{item.label}</span>
+              </div>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#CCC" strokeWidth="2">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            </button>
+          </div>
+        ))}
+
+        {/* Logout */}
+        <div className="wechat-section" style={{ marginTop: 8 }}>
+          <button className="wechat-menu-item" onClick={handleLogout}
+            style={{ width: '100%', justifyContent: 'center' }}>
+            <span style={{ fontSize: 16, fontWeight: 600, color: '#FA5151' }}>Log Out</span>
+          </button>
+        </div>
+      </div>
+
+      {/* QR Modal */}
+      {showQR && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          onClick={() => setShowQR(false)}
+          style={{
+            position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.6)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 200, backdropFilter: 'blur(10px)',
+          }}
         >
-          <div className={styles.avatar}>
-            {profile?.avatar_url ? (
-              <img src={profile.avatar_url} alt="Avatar" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
-            ) : (
-              <span>{profile?.display_name?.charAt(0).toUpperCase() || 'A'}</span>
-            )}
-          </div>
-          <div className={styles.info}>
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-              <h2 className={styles.name}>{profile?.display_name || 'Anonymous User'}</h2>
-              {renderGenderBadge()}
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            onClick={e => e.stopPropagation()}
+            style={{
+              backgroundColor: '#fff', borderRadius: 24, padding: 32,
+              textAlign: 'center', maxWidth: 300,
+            }}
+          >
+            <div style={{
+              width: 56, height: 56, borderRadius: 14, overflow: 'hidden',
+              margin: '0 auto 16px', backgroundColor: '#E8F9EF',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              {profile.avatarDataUrl ? (
+                <img src={profile.avatarDataUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#07C160" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                </svg>
+              )}
             </div>
-            <p className={styles.quroId}>Quro ID: quro_{profile?.quro_id}</p>
-          </div>
-          <button className={styles.qrBtn}>
-            <span className={styles.qrIcon}><QrCode size={24} color="#666" /></span>
-          </button>
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: '#111', marginBottom: 4 }}>
+              {profile.displayName}
+            </h3>
+            <p style={{ fontSize: 13, color: '#999', marginBottom: 20 }}>Quro ID: quro_{profile.quroId}</p>
+            {qrSrc && (
+              <img src={qrSrc} alt="My QR Code" style={{ width: 200, height: 200, margin: '0 auto', borderRadius: 12 }} />
+            )}
+            <p style={{ fontSize: 11, color: '#CCC', marginTop: 12 }}>
+              Scan to add me
+            </p>
+          </motion.div>
         </motion.div>
-
-        {/* WeChat-style/iOS Grouped Menu Lists */}
-        <div className={styles.menuGroup}>
-          <button className={styles.menuItem} onClick={() => router.push('/m/app/security')}>
-            <span className={styles.menuIcon}><MonitorSmartphone size={22} color="#07C160" /></span>
-            <span className={styles.menuLabel}>Linked Devices</span>
-            <span className={styles.menuArrow}><ChevronRight size={18} /></span>
-          </button>
-        </div>
-
-        <div className={styles.menuGroup}>
-          <button className={styles.menuItem}>
-            <span className={styles.menuIcon}><Bell size={22} color="#1890FF" /></span>
-            <span className={styles.menuLabel}>Notifications</span>
-            <span className={styles.menuArrow}><ChevronRight size={18} /></span>
-          </button>
-          <button className={styles.menuItem}>
-            <span className={styles.menuIcon}><Settings size={22} color="#888" /></span>
-            <span className={styles.menuLabel}>Settings</span>
-            <span className={styles.menuArrow}><ChevronRight size={18} /></span>
-          </button>
-        </div>
-
-        <div className={styles.menuGroup}>
-          <button className={styles.menuItem} onClick={handleLogout}>
-            <span className={styles.menuLabel} style={{ marginLeft: 0, textAlign: 'center', width: '100%', color: '#FA5151' }}>Log Out</span>
-          </button>
-        </div>
-      </main>
+      )}
     </div>
   );
 }
