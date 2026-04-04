@@ -17,88 +17,37 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [showDenied, setShowDenied] = useState(false);
   const [matchDistance, setMatchDistance] = useState(0);
-  const [matchedProfile, setMatchedProfile] = useState<any>(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   function beginLogin(profile: any) {
     setIsLoggingIn(true);
     window.setTimeout(() => {
       createSession(profile.quroId, profile.displayName);
-      window.location.replace('/m/app/chats');
+      router.replace('/m/app/chats');
     }, 2200);
   }
 
-  // New FaceScanner signature has no 'mode', it just returns descriptor
   async function handleVerified(descriptor: number[], snapshot: string, allDescriptors?: number[][]) {
     const stored = await getFaceData();
     if (!stored) {
       setError('No registered face was found on this device.');
-      return;
+      return false;
     }
 
     const match = evaluateFaceMatch(stored, descriptor, allDescriptors);
 
     if (match.accepted) {
-      setMatchedProfile(stored);
+      beginLogin(stored);
+      return true;
     } else {
       playFailBuzz();
       setMatchDistance(match.bestDistance);
       setShowDenied(true);
+      return false;
     }
   }
 
-  if (matchedProfile && !isLoggingIn) {
-    return (
-      <div style={{
-        position: 'fixed', inset: 0, zIndex: 999, background: '#0B0B0F',
-        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        fontFamily: "'Inter', sans-serif", padding: 32,
-      }}>
-        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-          style={{ width: '100%', maxWidth: 340, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
-          <div style={{ width: 68, height: 68, borderRadius: '50%', background: 'rgba(34,197,94,0.14)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-              <path d="m9 12 2 2 4-4"/>
-            </svg>
-          </div>
-
-          <h2 style={{ fontSize: 24, fontWeight: 700, color: '#fff', textAlign: 'center', margin: 0 }}>Verified Account</h2>
-          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.48)', textAlign: 'center', maxWidth: 300, margin: 0 }}>
-            We found your account on this device. Review the details below and tap log in.
-          </p>
-
-          <div style={{
-            width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: 22, padding: '24px 22px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
-          }}>
-            {matchedProfile.avatarDataUrl ? (
-              <img src={matchedProfile.avatarDataUrl} alt="" style={{ width: 78, height: 78, borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(34,197,94,0.28)' }} />
-            ) : (
-              <div style={{ width: 78, height: 78, borderRadius: '50%', background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span style={{ color: '#fff', fontSize: 30, fontWeight: 700 }}>{matchedProfile.displayName?.charAt(0)?.toUpperCase()}</span>
-              </div>
-            )}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <h3 style={{ fontSize: 22, fontWeight: 700, color: '#fff', margin: 0 }}>{matchedProfile.displayName}</h3>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                <polyline points="22 4 12 14.01 9 11.01"/>
-              </svg>
-            </div>
-            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', margin: 0, fontFamily: 'monospace' }}>Quro ID: {matchedProfile.quroId}</p>
-          </div>
-
-          <button onClick={() => beginLogin(matchedProfile)}
-            style={{ width: '100%', padding: '15px 0', background: '#22C55E', color: '#fff', border: 'none', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer' }}>
-            Log In
-          </button>
-        </motion.div>
-      </div>
-    );
-  }
-
-  if (isLoggingIn && matchedProfile) {
+  if (isLoggingIn) {
     return (
       <div style={{
         position: 'fixed', inset: 0, zIndex: 999, background: '#0B0B0F',
@@ -111,17 +60,15 @@ export default function LoginPage() {
             width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
             borderRadius: 22, padding: '24px 22px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
           }}>
-            {matchedProfile.avatarDataUrl ? (
-              <img src={matchedProfile.avatarDataUrl} alt="" style={{ width: 78, height: 78, borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.16)' }} />
-            ) : (
-              <div style={{ width: 78, height: 78, borderRadius: '50%', background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span style={{ color: '#fff', fontSize: 30, fontWeight: 700 }}>{matchedProfile.displayName?.charAt(0)?.toUpperCase()}</span>
-              </div>
-            )}
-            <h2 style={{ fontSize: 24, fontWeight: 700, color: '#fff', margin: 0 }}>{matchedProfile.displayName}</h2>
-            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', margin: 0, fontFamily: 'monospace' }}>Quro ID: {matchedProfile.quroId}</p>
+            <div style={{ width: 78, height: 78, borderRadius: '50%', background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                <path d="m9 12 2 2 4-4"/>
+              </svg>
+            </div>
+            <h2 style={{ fontSize: 24, fontWeight: 700, color: '#fff', margin: 0 }}>Signing You In</h2>
             <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', margin: '2px 0 0 0', textAlign: 'center' }}>
-              Account found. Logging you in now.
+              Secure face match confirmed. Redirecting now.
             </p>
           </div>
 

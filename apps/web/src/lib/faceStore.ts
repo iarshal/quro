@@ -154,16 +154,16 @@ export function averageDescriptors(descriptors: number[][]): number[] {
 
 /**
  * Primary threshold for an individual face descriptor sample.
- * Lower is stricter. 0.42-0.45 is a typical safe range for face-api.js.
+ * Lower is stricter. 0.44-0.46 is a practical range for this device-local flow.
  */
-export const FACE_MATCH_THRESHOLD = 0.42;
+export const FACE_MATCH_THRESHOLD = 0.45;
 
 /**
  * Average descriptor threshold.
  * This is slightly more forgiving than the per-sample threshold because
  * averaging smooths noise but can still drift with lighting or pose changes.
  */
-export const FACE_AVERAGE_MATCH_THRESHOLD = 0.46;
+export const FACE_AVERAGE_MATCH_THRESHOLD = 0.5;
 
 /**
  * Evaluate a face login using both the stored profile average descriptor and

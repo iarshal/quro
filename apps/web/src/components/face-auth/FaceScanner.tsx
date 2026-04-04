@@ -20,7 +20,7 @@ import {
 type ScanPhase = 'loading' | 'detecting' | 'face_found' | 'liveness' | 'light_emission' | 'processing' | 'verified' | 'failed' | 'no_camera';
 
 interface FaceScannerProps {
-  onVerified: (descriptor: number[], snapshot: string, allDescriptors?: number[][]) => void;
+  onVerified: (descriptor: number[], snapshot: string, allDescriptors?: number[][]) => Promise<boolean | void> | boolean | void;
   onFailed?: (reason: string) => void;
   onCancel?: () => void;
 }
@@ -36,6 +36,7 @@ const LIGHT_SEQUENCE = [
 ];
 const CAPTURE_SAMPLE_COUNT = 3;
 const CAPTURE_SAMPLE_DELAY_MS = 180;
+const MIN_FACE_RATIO = 0.22;
 
 export function FaceScanner({ onVerified, onFailed, onCancel }: FaceScannerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -151,6 +152,19 @@ export function FaceScanner({ onVerified, onFailed, onCancel }: FaceScannerProps
         const now = phaseRef.current;
         
         if (det) {
+          const box = det.detection.box;
+          const faceRatio = Math.max(box.width / v.videoWidth, box.height / v.videoHeight);
+
+          if (faceRatio < MIN_FACE_RATIO) {
+            faceCount.current = Math.max(0, faceCount.current - 1);
+            setPhase('detecting');
+            setStatusText('Move Closer To Camera');
+            setSubText('Bring your face inside the circle until it fills the frame');
+            mouthCount.current = 0;
+            timerRef.current = setTimeout(tick, 130);
+            return;
+          }
+
           if (now === 'detecting') {
             faceCount.current++;
             if (faceCount.current >= 6) {
@@ -181,6 +195,9 @@ export function FaceScanner({ onVerified, onFailed, onCancel }: FaceScannerProps
             if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
             setPhase('detecting'); setStatusText('Face Lost'); setSubText('Please reposition');
             mouthCount.current = 0;
+          } else if (now === 'detecting') {
+            setStatusText('Position Your Face');
+            setSubText('Move closer if your face is not being detected');
           }
         }
       } catch {}
@@ -274,7 +291,28 @@ export function FaceScanner({ onVerified, onFailed, onCancel }: FaceScannerProps
         if (!mountedRef.current) return;
         setPhase('verified'); setStatusText('Scan Successful'); setSubText('Face acquired');
         playVerificationSuccess(); cleanup();
-        setTimeout(() => { if (mountedRef.current) onVerified(d, snap, descriptors); }, 1200);
+        setTimeout(async () => {
+          if (!mountedRef.current) return;
+          try {
+            setStatusText('Finalizing Login');
+            setSubText('Checking secure match on this device');
+            const result = await onVerified(d, snap, descriptors);
+            if (result === false && mountedRef.current) {
+              setPhase('failed');
+              setStatusText('Face Match Failed');
+              setSubText('Please retry with the registered face');
+            }
+          } catch (error) {
+            console.error('[FaceScanner] Verification handoff failed:', error);
+            if (mountedRef.current) {
+              setPhase('failed');
+              setStatusText('Authentication Failed');
+              setSubText('Please retry');
+              playFailBuzz();
+              onFailed?.('handoff_failed');
+            }
+          }
+        }, 1200);
       }, 300);
     } catch { 
       clearInterval(pi); setPhase('failed'); setStatusText('Verification Error'); playFailBuzz(); onFailed?.('err'); 
