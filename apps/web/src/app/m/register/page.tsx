@@ -13,7 +13,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { FaceScanner } from '../../../components/face-auth/FaceScanner';
-import { getFaceData, compareFaces, compareFacesMulti, FACE_MATCH_THRESHOLD } from '../../../lib/faceStore';
+import { getFaceData, evaluateFaceMatch } from '../../../lib/faceStore';
 import { createSession } from '../../../lib/localSession';
 
 export default function RegisterFacePage() {
@@ -35,20 +35,16 @@ export default function RegisterFacePage() {
     // Check if this face is already registered
     const stored = await getFaceData();
     if (stored) {
-      // Use multi-descriptor comparison if available
-      let distance: number;
-      if (stored.faceDescriptors && stored.faceDescriptors.length > 0) {
-        distance = compareFacesMulti(stored.faceDescriptors, descriptor);
-      } else {
-        distance = compareFaces(stored.faceDescriptor, descriptor);
-      }
+      const match = evaluateFaceMatch(stored, descriptor, allDescriptors);
 
-      console.log(`[FACE MATCH] Distance: ${distance.toFixed(4)}, Threshold: ${FACE_MATCH_THRESHOLD}`);
+      console.log(
+        `[FACE MATCH] best=${match.bestDistance.toFixed(4)} avg=${match.averageDistance.toFixed(4)} samples=${match.matchedSamples}/${match.sampleCount}`
+      );
 
-      if (distance <= FACE_MATCH_THRESHOLD) {
+      if (match.accepted) {
         // Same person — already registered
         setExistingProfile(stored);
-        setMatchDistance(distance);
+        setMatchDistance(match.bestDistance);
         setShowAlreadyRegistered(true);
         return;
       }

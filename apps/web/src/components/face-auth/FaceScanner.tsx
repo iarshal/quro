@@ -34,6 +34,8 @@ const LIGHT_SEQUENCE = [
   { color: '#EC4899', duration: 400 },  // Pink
   { color: '#FFFFFF', duration: 300 },  // White
 ];
+const CAPTURE_SAMPLE_COUNT = 3;
+const CAPTURE_SAMPLE_DELAY_MS = 180;
 
 export function FaceScanner({ onVerified, onFailed, onCancel }: FaceScannerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -226,6 +228,23 @@ export function FaceScanner({ onVerified, onFailed, onCancel }: FaceScannerProps
     } catch { return null; }
   }
 
+  async function collectDescriptors(): Promise<number[][]> {
+    const descriptors: number[][] = [];
+
+    for (let attempt = 0; attempt < CAPTURE_SAMPLE_COUNT * 3 && descriptors.length < CAPTURE_SAMPLE_COUNT; attempt++) {
+      const descriptor = await getDescriptor();
+      if (descriptor) {
+        descriptors.push(descriptor);
+      }
+
+      if (descriptors.length < CAPTURE_SAMPLE_COUNT) {
+        await new Promise((resolve) => setTimeout(resolve, CAPTURE_SAMPLE_DELAY_MS));
+      }
+    }
+
+    return descriptors;
+  }
+
   async function doCaptureAndVerify() {
     setPhase('processing'); setStatusText('Verifying Identity...'); setSubText('Please wait a moment');
     
@@ -233,14 +252,21 @@ export function FaceScanner({ onVerified, onFailed, onCancel }: FaceScannerProps
     const pi = setInterval(() => { p += 5; if (mountedRef.current) setProgress(Math.min(p, 88)); if (p >= 88) clearInterval(pi); }, 40);
     
     try {
-      // Single capture for lightning speed unified flow
-      const d = await getDescriptor();
+      const descriptors = await collectDescriptors();
       clearInterval(pi);
-      
-      if (!d) { 
+
+      if (descriptors.length === 0) {
         setProgress(0); setPhase('failed'); setStatusText('Capture Failed'); playFailBuzz(); onFailed?.('no desc'); return; 
       }
-      
+
+      const d =
+        descriptors.length === 1
+          ? descriptors[0]
+          : descriptors[0].map((_, index) => {
+              let sum = 0;
+              for (const descriptor of descriptors) sum += descriptor[index];
+              return sum / descriptors.length;
+            });
       const snap = takeSnapshot();
       if (mountedRef.current) setProgress(100);
       
@@ -248,7 +274,7 @@ export function FaceScanner({ onVerified, onFailed, onCancel }: FaceScannerProps
         if (!mountedRef.current) return;
         setPhase('verified'); setStatusText('Scan Successful'); setSubText('Face acquired');
         playVerificationSuccess(); cleanup();
-        setTimeout(() => { if (mountedRef.current) onVerified(d, snap); }, 1200);
+        setTimeout(() => { if (mountedRef.current) onVerified(d, snap, descriptors); }, 1200);
       }, 300);
     } catch { 
       clearInterval(pi); setPhase('failed'); setStatusText('Verification Error'); playFailBuzz(); onFailed?.('err'); 

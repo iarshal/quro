@@ -8,7 +8,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { FaceScanner } from '../../../components/face-auth/FaceScanner';
-import { getFaceData, compareFaces, compareFacesMulti, FACE_MATCH_THRESHOLD } from '../../../lib/faceStore';
+import { getFaceData, evaluateFaceMatch } from '../../../lib/faceStore';
 import { createSession } from '../../../lib/localSession';
 import { playFailBuzz } from '../../../lib/audioEffects';
 
@@ -29,25 +29,20 @@ export default function LoginPage() {
   }
 
   // New FaceScanner signature has no 'mode', it just returns descriptor
-  async function handleVerified(descriptor: number[], snapshot: string) {
+  async function handleVerified(descriptor: number[], snapshot: string, allDescriptors?: number[][]) {
     const stored = await getFaceData();
     if (!stored) {
       setError('No registered face was found on this device.');
       return;
     }
 
-    let distance: number;
-    if (stored.faceDescriptors && stored.faceDescriptors.length > 0) {
-      distance = compareFacesMulti(stored.faceDescriptors, descriptor);
-    } else {
-      distance = compareFaces(stored.faceDescriptor, descriptor);
-    }
+    const match = evaluateFaceMatch(stored, descriptor, allDescriptors);
 
-    if (distance <= FACE_MATCH_THRESHOLD) {
+    if (match.accepted) {
       setMatchedProfile(stored);
     } else {
       playFailBuzz();
-      setMatchDistance(distance);
+      setMatchDistance(match.bestDistance);
       setShowDenied(true);
     }
   }

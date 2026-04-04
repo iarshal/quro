@@ -8,7 +8,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { deleteFaceData, getFaceData, compareFaces, FACE_MATCH_THRESHOLD } from '../../../../lib/faceStore';
+import { deleteFaceData, getFaceData, evaluateFaceMatch } from '../../../../lib/faceStore';
 import { clearSession } from '../../../../lib/localSession';
 import { FaceScanner } from '../../../../components/face-auth/FaceScanner';
 
@@ -38,11 +38,11 @@ export default function MobileSecurityPage() {
     } catch {}
   }, []);
 
-  async function handleDeleteVerified(descriptor: number[]) {
+  async function handleDeleteVerified(descriptor: number[], _snapshot: string, allDescriptors?: number[][]) {
     const stored = await getFaceData();
     if (!stored) return;
-    const distance = compareFaces(stored.faceDescriptor, descriptor);
-    if (distance <= FACE_MATCH_THRESHOLD) {
+    const match = evaluateFaceMatch(stored, descriptor, allDescriptors);
+    if (match.accepted) {
       setDeleting(true);
       await deleteFaceData();
       clearSession();

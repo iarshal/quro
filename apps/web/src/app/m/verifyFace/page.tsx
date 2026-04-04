@@ -13,7 +13,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { FaceScanner } from '../../../components/face-auth/FaceScanner';
-import { getFaceData, compareFaces, compareFacesMulti, FACE_MATCH_THRESHOLD } from '../../../lib/faceStore';
+import { getFaceData, evaluateFaceMatch } from '../../../lib/faceStore';
 import { createSession } from '../../../lib/localSession';
 
 export default function VerifyFacePage() {
@@ -29,20 +29,15 @@ export default function VerifyFacePage() {
     setError('');
     const stored = await getFaceData();
     if (stored) {
-      let distance: number;
-      if (stored.faceDescriptors && stored.faceDescriptors.length > 0) {
-        distance = compareFacesMulti(stored.faceDescriptors, descriptor);
-      } else {
-        distance = compareFaces(stored.faceDescriptor, descriptor);
-      }
+      const match = evaluateFaceMatch(stored, descriptor, allDescriptors);
 
-      if (distance <= FACE_MATCH_THRESHOLD) {
+      if (match.accepted) {
         setExistingProfile(stored);
         setShowAlreadyRegistered(true);
         return;
       }
 
-      setMatchDistance(distance);
+      setMatchDistance(match.bestDistance);
       setShowDenied(true);
       return;
     }

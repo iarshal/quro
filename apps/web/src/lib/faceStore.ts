@@ -23,6 +23,15 @@ export interface QuroProfile {
   avatarDataUrl?: string; // Base64 snapshot from camera
 }
 
+export interface FaceMatchResult {
+  accepted: boolean;
+  bestDistance: number;
+  averageDistance: number;
+  matchedSamples: number;
+  requiredMatches: number;
+  sampleCount: number;
+}
+
 /** Serialize Float32Array to regular array */
 export function serializeDescriptor(d: Float32Array | number[]): number[] {
   return Array.from(d);
@@ -144,13 +153,60 @@ export function averageDescriptors(descriptors: number[][]): number[] {
 }
 
 /**
- * Face match threshold for this local-device flow.
- *
- * We use a more forgiving threshold because the app is matching
- * camera captures taken on the same device under different lighting.
- * The earlier 0.42 setting was rejecting legitimate logins.
+ * Primary threshold for an individual face descriptor sample.
+ * Lower is stricter. 0.42-0.45 is a typical safe range for face-api.js.
  */
-export const FACE_MATCH_THRESHOLD = 0.7;
+export const FACE_MATCH_THRESHOLD = 0.42;
+
+/**
+ * Average descriptor threshold.
+ * This is slightly more forgiving than the per-sample threshold because
+ * averaging smooths noise but can still drift with lighting or pose changes.
+ */
+export const FACE_AVERAGE_MATCH_THRESHOLD = 0.46;
+
+/**
+ * Evaluate a face login using both the stored profile average descriptor and
+ * multiple current samples. A login is accepted only when:
+ * 1. the best current sample is within the strict threshold,
+ * 2. the averaged current face is close to the stored average descriptor,
+ * 3. enough current samples independently match the stored face.
+ */
+export function evaluateFaceMatch(
+  profile: Pick<QuroProfile, 'faceDescriptor' | 'faceDescriptors'>,
+  currentDescriptor: number[],
+  currentDescriptors?: number[][]
+): FaceMatchResult {
+  const storedDescriptors =
+    profile.faceDescriptors && profile.faceDescriptors.length > 0
+      ? profile.faceDescriptors
+      : [profile.faceDescriptor];
+
+  const samples =
+    currentDescriptors && currentDescriptors.length > 0
+      ? currentDescriptors
+      : [currentDescriptor];
+
+  const bestDistance = compareFacesMulti(storedDescriptors, currentDescriptor);
+  const averageCurrentDescriptor = averageDescriptors(samples);
+  const averageDistance = compareFaces(profile.faceDescriptor, averageCurrentDescriptor);
+  const matchedSamples = samples.filter(
+    (sample) => compareFacesMulti(storedDescriptors, sample) <= FACE_MATCH_THRESHOLD
+  ).length;
+  const requiredMatches = samples.length >= 3 ? 2 : 1;
+
+  return {
+    accepted:
+      bestDistance <= FACE_MATCH_THRESHOLD &&
+      averageDistance <= FACE_AVERAGE_MATCH_THRESHOLD &&
+      matchedSamples >= requiredMatches,
+    bestDistance,
+    averageDistance,
+    matchedSamples,
+    requiredMatches,
+    sampleCount: samples.length,
+  };
+}
 
 /** Generate a random Quro ID */
 export function generateQuroId(): string {
