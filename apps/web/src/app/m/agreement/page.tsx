@@ -1,13 +1,7 @@
 'use client';
 
-/**
- * Pre-Scan Agreement Page
- * Matches user specifications and screenshots for the "Start Scanning" UI
- */
-
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
 
 export default function MobileAgreementPage() {
   const router = useRouter();
@@ -22,88 +16,109 @@ export default function MobileAgreementPage() {
   }, []);
 
   const handleStart = () => {
-    if (!agreed) {
-      alert("Please agree to the Terms and Privacy Policy first.");
-      return;
-    }
+    if (!agreed) return;
     router.push(mode === 'login' ? '/m/login' : '/m/verifyFace');
   };
 
   return (
-    <div style={{ height: '100dvh', backgroundColor: '#fff', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ height: '100dvh', backgroundColor: '#FFFFFF', display: 'flex', flexDirection: 'column', color: '#000', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+      
       {/* Header */}
-      <header style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', backgroundColor: '#fff', borderBottom: '1px solid #F5F5F5' }}>
-        <button onClick={() => router.back()} style={{ background: 'none', border: 'none', padding: 4 }}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <header style={{ display: 'flex', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid #F3F4F6' }}>
+        <button onClick={() => router.back()} style={{ background: 'none', border: 'none', padding: 4, cursor: 'pointer' }}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="15 18 9 12 15 6"/>
           </svg>
         </button>
-        <h1 style={{ flex: 1, textAlign: 'center', fontSize: 18, fontWeight: 600, color: '#111', marginRight: 32 }}>
-          {mode === 'login' ? 'Login Agreement' : 'Registration Agreement'}
+        <h1 style={{ flex: 1, textAlign: 'center', margin: 0, fontSize: 18, fontWeight: 600, marginRight: 32 }}>
+          Identity Authentication
         </h1>
       </header>
 
-      {/* Content */}
-      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 32 }}>
+      {/* Main Content */}
+      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '32px 24px', overflowY: 'auto' }}>
         
-        {/* Core Image Icon representing scan matching the reference screenshot */}
-        <div style={{ position: 'relative', width: 200, height: 200, marginBottom: 40 }}>
-          {/* Scan frame corners */}
-          <div style={{ position: 'absolute', top: 0, left: 0, width: 24, height: 24, borderTop: '3px solid #3B82F6', borderLeft: '3px solid #3B82F6' }} />
-          <div style={{ position: 'absolute', top: 0, right: 0, width: 24, height: 24, borderTop: '3px solid #3B82F6', borderRight: '3px solid #3B82F6' }} />
-          <div style={{ position: 'absolute', bottom: 0, left: 0, width: 24, height: 24, borderBottom: '3px solid #3B82F6', borderLeft: '3px solid #3B82F6' }} />
-          <div style={{ position: 'absolute', bottom: 0, right: 0, width: 24, height: 24, borderBottom: '3px solid #3B82F6', borderRight: '3px solid #3B82F6' }} />
+        <h2 style={{ fontSize: 28, fontWeight: 800, margin: '0 0 12px 0', textAlign: 'center', letterSpacing: '-0.5px' }}>
+          Identity Authentication
+        </h2>
+        <p style={{ fontSize: 16, color: '#9CA3AF', textAlign: 'center', margin: '0 0 48px 0', lineHeight: 1.5 }}>
+          Follow the instructions to safely verify your<br />identity.
+        </p>
 
-          {/* Person Illustration */}
-          <div style={{ position: 'absolute', inset: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end' }}>
-            {/* Head */}
-            <div style={{ width: 70, height: 80, backgroundColor: '#FCD4C6', borderRadius: '35px 35px 20px 20px', zIndex: 2, position: 'relative' }}>
-              {/* Hair */}
-              <div style={{ position: 'absolute', top: -10, left: -5, right: -5, height: 40, backgroundColor: '#333', borderRadius: '40px 40px 10px 10px' }} />
-            </div>
-            {/* Body suit */}
-            <div style={{ width: 120, height: 60, backgroundColor: '#475569', borderRadius: '60px 60px 0 0', zIndex: 1, position: 'relative', overflow: 'hidden' }}>
-              {/* Tie */}
-              <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: 10, height: 40, backgroundColor: '#EF4444' }} />
-            </div>
-          </div>
+        {/* Scan Area UI */}
+        <div style={{ position: 'relative', width: 220, height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 48 }}>
+          
+          {/* Top subtle blue glow */}
+          <div style={{ position: 'absolute', top: -10, left: '20%', right: '20%', height: 10, background: 'linear-gradient(to bottom, rgba(59,130,246,0.3), transparent)', filter: 'blur(8px)' }} />
+          
+          {/* Top Blue Bar line */}
+          <div style={{ position: 'absolute', top: -4, left: '25%', right: '25%', height: 4, background: 'linear-gradient(90deg, transparent, rgba(59,130,246,0.8), transparent)', filter: 'blur(1px)' }} />
 
-          {/* Scanning Line overlay */}
-          <motion.div
-            animate={{ top: ['10%', '90%', '10%'] }}
-            transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
-            style={{ position: 'absolute', left: -10, right: -10, height: 10, background: 'linear-gradient(to bottom, rgba(59,130,246,0) 0%, rgba(59,130,246,0.5) 100%)', borderBottom: '2px solid #3B82F6', zIndex: 10 }}
-          />
+          {/* Corner Brackets */}
+          <div style={{ position: 'absolute', top: 0, left: 0, width: 30, height: 30, borderTop: '4px solid #3B82F6', borderLeft: '4px solid #3B82F6' }} />
+          <div style={{ position: 'absolute', top: 0, right: 0, width: 30, height: 30, borderTop: '4px solid #3B82F6', borderRight: '4px solid #3B82F6' }} />
+          <div style={{ position: 'absolute', bottom: 0, left: 0, width: 30, height: 30, borderBottom: '4px solid #3B82F6', borderLeft: '4px solid #3B82F6' }} />
+          <div style={{ position: 'absolute', bottom: 0, right: 0, width: 30, height: 30, borderBottom: '4px solid #3B82F6', borderRight: '4px solid #3B82F6' }} />
+
+          {/* Image */}
+          <img src="/face-guide.png" alt="Face verification illustration" style={{ width: 140, height: 'auto', objectFit: 'contain', zIndex: 10 }} />
         </div>
 
-        <p style={{ fontSize: 16, color: '#666', textAlign: 'center', lineHeight: 1.5, marginBottom: 40 }}>
-          {mode === 'login'
-            ? 'Before login, please review the facial data agreement and then complete face verification.'
-            : 'Before registration, please review the facial data agreement and then complete face verification.'}
+        {/* Instructions */}
+        <p style={{ fontSize: 16, color: '#6B7280', textAlign: 'center', margin: '0 0 12px 0' }}>
+          Please ensure this is <span style={{ fontWeight: 700, color: '#374151' }}>you</span> operating the device.
+        </p>
+        <p style={{ fontSize: 16, color: '#6B7280', textAlign: 'center', margin: 0, lineHeight: 1.5 }}>
+          Face the camera directly and ensure good<br />lighting.
         </p>
 
       </main>
 
-      {/* Bottom Action Area */}
-      <div style={{ padding: '0 24px 40px' }}>
-        <button
-          onClick={handleStart}
-          style={{ width: '100%', padding: '16px', backgroundColor: agreed ? '#3B82F6' : '#93C5FD', color: '#fff', border: 'none', borderRadius: 6, fontSize: 18, fontWeight: 600, cursor: 'pointer', marginBottom: 16, transition: 'background-color 0.2s' }}
-        >
-          Continue
-        </button>
-
-        <label style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'center', gap: 8, cursor: 'pointer' }}>
-          <input
-            type="checkbox"
-            checked={agreed}
-            onChange={(e) => setAgreed(e.target.checked)}
-            style={{ width: 18, height: 18, marginTop: 2, accentColor: '#3B82F6' }}
-          />
-          <span style={{ fontSize: 13, color: '#999', lineHeight: 1.5 }}>
-            I have read and agree to the <a href="#" style={{ color: '#3B82F6', textDecoration: 'none' }}>Privacy Policy</a> and <a href="#" style={{ color: '#3B82F6', textDecoration: 'none' }}>Biometric Data Agreement</a>. I consent to local processing of my facial data.
+      {/* Footer Area */}
+      <div style={{ padding: '0 24px 32px' }}>
+        
+        {/* Checkbox */}
+        <label style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '16px', border: '1px solid #E5E7EB', borderRadius: 12, marginBottom: 24, cursor: 'pointer' }}>
+          <div style={{ position: 'relative', width: 22, height: 22, flexShrink: 0 }}>
+            <input
+              type="checkbox"
+              checked={agreed}
+              onChange={(e) => setAgreed(e.target.checked)}
+              style={{ position: 'absolute', opacity: 0, cursor: 'pointer', zIndex: 2, inset: 0 }}
+            />
+            <div style={{ width: 22, height: 22, borderRadius: 4, border: `2px solid ${agreed ? '#3B82F6' : '#9CA3AF'}`, background: agreed ? '#3B82F6' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {agreed && (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+              )}
+            </div>
+          </div>
+          <span style={{ fontSize: 14, color: '#4B5563', lineHeight: 1.5 }}>
+            I agree to the <span style={{ color: '#3B82F6', fontWeight: 600 }}>Quro Privacy Policy</span> and <span style={{ color: '#3B82F6', fontWeight: 600 }}>Biometric Agreement</span>.
           </span>
         </label>
+
+        {/* Action Button */}
+        <button
+          onClick={handleStart}
+          disabled={!agreed}
+          style={{
+            width: '100%',
+            padding: '16px',
+            background: agreed ? '#3B82F6' : '#E5E7EB',
+            color: agreed ? '#fff' : '#9CA3AF',
+            border: 'none',
+            borderRadius: 100,
+            fontSize: 18,
+            fontWeight: 700,
+            cursor: agreed ? 'pointer' : 'not-allowed',
+            transition: 'all 0.2s'
+          }}
+        >
+          Start Registration
+        </button>
+
       </div>
     </div>
   );

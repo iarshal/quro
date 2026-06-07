@@ -1,12 +1,11 @@
 'use client';
 
 /**
- * Profile Setup — After Face Verification (English)
+ * Profile Setup — Bind with Google Page (Restored)
  */
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
 import { saveFaceData, generateQuroId, type QuroProfile } from '../../../../lib/faceStore';
 import { createSession } from '../../../../lib/localSession';
 
@@ -28,7 +27,6 @@ export default function ProfileSetupPage() {
   const genderOptions = [
     { value: 'male', label: 'Male', color: '#3B82F6', bg: '#EFF6FF' },
     { value: 'female', label: 'Female', color: '#EC4899', bg: '#FDF2F8' },
-    { value: 'transgender', label: 'Trans', color: '#8B5CF6', bg: '#F5F3FF' },
     { value: 'other', label: 'Other', color: '#F59E0B', bg: '#FFFBEB' },
   ];
 
@@ -61,6 +59,7 @@ export default function ProfileSetupPage() {
       }
       createSession(quroId, name.trim());
       sessionStorage.removeItem('__QURO_FACE__');
+      
       router.replace('/m/app/chats');
     } catch (err: any) {
       setError(err.message || 'Setup failed');
@@ -68,134 +67,135 @@ export default function ProfileSetupPage() {
     }
   }
 
+  const handleGoogleBind = () => {
+    // Simulate OAuth pop-up and auto-fill
+    setName('Alex Doe');
+    setBirthday('1998-05-15');
+    setGender('male');
+  };
+
   return (
-    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', backgroundColor: '#F7F7F7' }}>
+    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', backgroundColor: '#FFFFFF', color: '#111', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       {/* Header */}
       <header style={{
-        display: 'flex', alignItems: 'center', padding: '12px 16px', backgroundColor: '#F7F7F7',
+        display: 'flex', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid #F3F4F6'
       }}>
         <button onClick={() => router.back()} style={{
           width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center',
           background: 'none', border: 'none', cursor: 'pointer'
         }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="2.5" strokeLinecap="round">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="2.5" strokeLinecap="round">
             <polyline points="15 18 9 12 15 6"/>
           </svg>
         </button>
-        <h1 style={{ flex: 1, textAlign: 'center', fontSize: 17, fontWeight: 600, color: '#111' }}>
-          Setup Profile
+        <h1 style={{ flex: 1, textAlign: 'center', fontSize: 18, fontWeight: 600, margin: 0, marginRight: 36 }}>
+          Identity Required
         </h1>
-        <div style={{ width: 36 }} />
       </header>
 
       {/* Form */}
-      <main style={{ flex: 1, overflowY: 'auto', padding: '24px 20px', fontFamily: "'Inter', sans-serif" }}>
-        {/* Verified badge */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
+      <main style={{ flex: 1, overflowY: 'auto', padding: '32px 24px' }}>
+        
+        <h2 style={{ fontSize: 24, fontWeight: 700, margin: '0 0 24px 0', textAlign: 'center' }}>
+          Bind Account
+        </h2>
+
+        {/* Bind with Google Button */}
+        <button
+          onClick={handleGoogleBind}
           style={{
-            display: 'flex', alignItems: 'center', gap: 12,
-            padding: '16px', backgroundColor: '#E8F9EF', borderRadius: 12, marginBottom: 28,
-            border: '1px solid #C6F6D5'
+            width: '100%', padding: '16px', backgroundColor: '#fff', color: '#3C4043',
+            border: '1px solid #DADCE0', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
+            fontSize: 16, fontWeight: 600, cursor: 'pointer', marginBottom: 32,
+            boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
           }}
         >
-          <div style={{ width: 32, height: 32, borderRadius: '50%', backgroundColor: '#07C160', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-              <path d="m9 12 2 2 4-4"/>
-            </svg>
-          </div>
-          <div>
-            <p style={{ fontSize: 15, fontWeight: 700, color: '#064E3B' }}>Biometrics Verified</p>
-            <p style={{ fontSize: 12, color: '#047857', marginTop: 2 }}>Real person presence confirmed</p>
-          </div>
-        </motion.div>
+          <svg width="24" height="24" viewBox="0 0 48 48">
+            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.7 17.74 9.5 24 9.5z"/>
+            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+          </svg>
+          Bind with Google
+        </button>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 32 }}>
+          <div style={{ flex: 1, height: 1, backgroundColor: '#E5E7EB' }} />
+          <span style={{ fontSize: 13, color: '#9CA3AF', fontWeight: 500 }}>OR ENTER MANUALLY</span>
+          <div style={{ flex: 1, height: 1, backgroundColor: '#E5E7EB' }} />
+        </div>
 
         {/* Name */}
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: 24 }}>
-          <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#6B7280', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-            Display Name
+        <div style={{ marginBottom: 24 }}>
+          <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#4B5563', marginBottom: 8 }}>
+            Full Name
           </label>
           <input
             type="text" value={name} onChange={e => setName(e.target.value)}
             placeholder="e.g. Alex Chen"
             style={{
-              width: '100%', padding: '16px', backgroundColor: '#fff', borderRadius: 10,
-              fontSize: 16, fontWeight: 500, color: '#111',
-              border: '1.5px solid transparent', transition: 'all 0.2s', outline: 'none',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
+              width: '100%', padding: '16px', backgroundColor: '#F9FAFB', borderRadius: 10,
+              fontSize: 16, color: '#111', border: '1px solid #D1D5DB', outline: 'none'
             }}
-            onFocus={e => e.target.style.borderColor = '#07C160'}
-            onBlur={e => e.target.style.borderColor = 'transparent'}
           />
-        </motion.div>
+        </div>
 
         {/* Birthday */}
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} style={{ marginBottom: 24 }}>
-          <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#6B7280', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+        <div style={{ marginBottom: 24 }}>
+          <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#4B5563', marginBottom: 8 }}>
             Date of Birth
           </label>
           <input
             type="date" value={birthday} onChange={e => setBirthday(e.target.value)}
             style={{
-              width: '100%', padding: '16px', backgroundColor: '#fff', borderRadius: 10,
-              fontSize: 16, fontWeight: 500, color: '#111',
-              border: '1.5px solid transparent', transition: 'all 0.2s', outline: 'none',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.02)', WebkitAppearance: 'none'
+              width: '100%', padding: '16px', backgroundColor: '#F9FAFB', borderRadius: 10,
+              fontSize: 16, color: '#111', border: '1px solid #D1D5DB', outline: 'none', WebkitAppearance: 'none'
             }}
-            onFocus={e => e.target.style.borderColor = '#07C160'}
-            onBlur={e => e.target.style.borderColor = 'transparent'}
           />
-        </motion.div>
+        </div>
 
         {/* Gender */}
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} style={{ marginBottom: 24 }}>
-          <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#6B7280', marginBottom: 12, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+        <div style={{ marginBottom: 32 }}>
+          <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#4B5563', marginBottom: 12 }}>
             Gender
           </label>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+          <div style={{ display: 'flex', gap: 12 }}>
             {genderOptions.map(opt => (
-              <motion.button
+              <button
                 key={opt.value}
-                whileTap={{ scale: 0.97 }}
                 onClick={() => setGender(opt.value)}
                 style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                  padding: '16px 12px', backgroundColor: gender === opt.value ? opt.bg : '#fff',
-                  borderRadius: 12, border: `2px solid ${gender === opt.value ? opt.color : 'transparent'}`,
-                  cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
+                  flex: 1, padding: '16px 8px', backgroundColor: gender === opt.value ? opt.bg : '#F9FAFB',
+                  borderRadius: 12, border: `2px solid ${gender === opt.value ? opt.color : '#D1D5DB'}`,
+                  cursor: 'pointer', transition: 'all 0.2s', fontSize: 14, fontWeight: 600,
+                  color: gender === opt.value ? opt.color : '#4B5563'
                 }}
               >
-                <span style={{ fontSize: 15, fontWeight: 700, color: gender === opt.value ? opt.color : '#9CA3AF' }}>
-                  {opt.label}
-                </span>
-              </motion.button>
+                {opt.label}
+              </button>
             ))}
           </div>
-        </motion.div>
+        </div>
 
         {error && <p style={{ color: '#EF4444', fontSize: 14, fontWeight: 500, marginBottom: 16, textAlign: 'center' }}>{error}</p>}
       </main>
 
       {/* Bottom CTA */}
-      <div style={{ padding: '16px 20px 32px', backgroundColor: '#F7F7F7' }}>
-        <motion.button
-          whileTap={isValid ? { scale: 0.97 } : {}}
+      <div style={{ padding: '16px 24px 32px' }}>
+        <button
           onClick={handleComplete}
           disabled={!isValid || loading}
           style={{
             width: '100%', padding: '16px',
-            backgroundColor: isValid ? '#07C160' : '#A7F3D0',
-            color: isValid ? '#fff' : '#047857', border: 'none', borderRadius: 12,
-            fontSize: 17, fontWeight: 700,
+            background: isValid ? '#3B82F6' : '#E5E7EB',
+            color: isValid ? '#fff' : '#9CA3AF', border: 'none', borderRadius: 100,
+            fontSize: 18, fontWeight: 700,
             cursor: isValid ? 'pointer' : 'not-allowed',
-            boxShadow: isValid ? '0 8px 16px rgba(7,193,96,0.25)' : 'none',
             transition: 'all 0.2s',
           }}
         >
-          {loading ? 'Creating Account...' : 'Finish Setup'}
-        </motion.button>
+          {loading ? 'Creating Account...' : 'Complete Registration'}
+        </button>
       </div>
     </div>
   );

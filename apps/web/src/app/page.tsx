@@ -1,229 +1,242 @@
-// @ts-nocheck
+'use client';
 
-/**
- * Quro Landing Page — Corporate Enterprise Aesthetic (English)
- * Inspired by NetEase YiDun / Tencent Cloud Enterprise aesthetics
- */
+import Link from 'next/link';
+import { Shield, Video, Zap, ArrowRight, CheckCircle2, Globe, Share2 } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { MouseGlow } from '../components/MouseGlow';
 
-import QRCode from 'qrcode';
-
-export default async function LandingPage() {
-  const qrSrc = await QRCode.toDataURL('quro://session/demo-session', {
-    errorCorrectionLevel: 'H',
-    margin: 1,
-    width: 220,
-    color: { dark: '#111111', light: '#FFFFFF' },
-  });
-
+export default function LandingPage() {
   return (
-    <div style={{ minHeight: '100vh', background: '#F8FAFC', overflow: 'hidden', fontFamily: "'Inter', sans-serif" }}>
-      <style>{`
-        @keyframes float { 0%,100% { transform: translateY(0px); } 50% { transform: translateY(-12px); } }
-        @keyframes slideInLeft { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
-        @keyframes popIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
-        .nav-link { transition: color 0.2s; color: #4B5563; text-decoration: none; font-size: 15px; font-weight: 500; }
-        .nav-link:hover { color: #2563EB; }
-        .product-card { transition: all 0.3s ease; border: 1px solid #E5E7EB; background: #fff; border-radius: 12px; padding: 32px 24px; }
-        .product-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(37,99,235,0.08); border-color: #BFDBFE; }
-        .animate-slide-left { animation: slideInLeft 0.8s ease-out forwards; }
-        .animate-pop-in { animation: popIn 1s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards; opacity: 0; }
-      `}</style>
+    <div className="bg-surface text-on-surface overflow-x-hidden selection:bg-primary/20 min-h-screen">
+      <MouseGlow />
+      {/* TopNavBar */}
+      <header className="fixed top-0 left-0 right-0 z-50 bg-surface/80 backdrop-blur-xl shadow-[0_4px_30px_rgba(0,0,0,0.04),0_10px_50px_rgba(0,88,190,0.06)]">
+        <nav className="flex justify-between items-center w-full px-12 py-6 max-w-screen-2xl mx-auto">
+          <div className="text-[1.75rem] font-bold tracking-tighter text-primary">Quro</div>
+          <div className="hidden md:flex items-center gap-10">
+            <Link className="font-body text-[1rem] tracking-tight text-on-surface-variant/80 hover:text-primary transition-all duration-300" href="#">Features</Link>
+            <Link className="font-body text-[1rem] tracking-tight text-on-surface-variant/80 hover:text-primary transition-all duration-300" href="#">Privacy</Link>
+            <Link className="font-body text-[1rem] tracking-tight text-on-surface-variant/80 hover:text-primary transition-all duration-300" href="#">Pricing</Link>
+          </div>
+          <div className="flex items-center gap-4">
+            <Link href="/auth">
+              <button className="px-6 py-2.5 bg-primary text-on-primary font-medium rounded-lg hover:scale-[1.02] active:scale-[0.98] transition-transform shadow-lg shadow-primary/20 cursor-pointer">
+                Get Started
+              </button>
+            </Link>
+          </div>
+        </nav>
+      </header>
 
-      {/* ═══════════════════════ NAV ═══════════════════════ */}
-      <nav style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '16px 48px', position: 'relative', zIndex: 10,
-        backgroundColor: '#fff', borderBottom: '1px solid #E5E7EB'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 40 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            {/* Logo */}
-            <div style={{
-              width: 32, height: 32, borderRadius: 8,
-              background: 'linear-gradient(135deg, #1D4ED8, #3B82F6)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-              </svg>
+      <main className="relative pt-32 ethereal-gradient min-h-screen">
+        {/* Hero Section */}
+        <section className="relative px-12 pt-20 pb-32 max-w-screen-2xl mx-auto flex flex-col items-center text-center">
+          <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-primary/5 blur-[120px] rounded-full -z-10"></div>
+          
+          <motion.span 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="inline-block px-4 py-1.5 mb-8 rounded-full bg-primary/5 text-primary text-[0.6875rem] font-bold uppercase tracking-[0.2em]"
+          >
+            The Digital Mirage
+          </motion.span>
+          
+          <motion.h1 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="text-[3.5rem] md:text-[5rem] font-bold tracking-tighter leading-[1.1] text-on-surface max-w-4xl mb-8"
+          >
+            Ethereal Connectivity
+          </motion.h1>
+          
+          <motion.p 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="text-[1.125rem] text-on-surface-variant max-w-2xl mb-12 leading-relaxed"
+          >
+            Experience a communication interface projected into your space. Zero-cloud, local-first, and private by design. Your data never leaves the glass.
+          </motion.p>
+          
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="flex flex-col md:flex-row gap-6 items-center"
+          >
+            <Link href="/auth">
+              <button className="group relative px-10 py-5 bg-primary text-on-primary font-bold rounded-xl overflow-hidden shadow-2xl shadow-primary/30 transition-all hover:scale-[1.03] cursor-pointer">
+                <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <span className="relative z-10 flex items-center gap-2">
+                  Get Started
+                  <ArrowRight size={18} />
+                </span>
+              </button>
+            </Link>
+          </motion.div>
+
+          {/* Hero Image / Visual Element */}
+          <motion.div 
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5, duration: 0.8 }}
+            className="mt-24 w-full max-w-5xl mx-auto relative group"
+          >
+            <div className="absolute -inset-4 bg-gradient-to-r from-primary/10 via-secondary/10 to-primary/10 blur-3xl rounded-[2rem] opacity-50"></div>
+            <div className="relative glass-card rounded-[2rem] p-4 border border-white/50 shadow-2xl overflow-hidden aspect-[16/9]">
+              <img 
+                className="w-full h-full object-cover rounded-[1.5rem]" 
+                alt="A sophisticated abstract 3D landscape" 
+                src="https://lh3.googleusercontent.com/aida-public/AB6AXuD45HLk7r9TuJel9tga3Dxhoyul1ijMC-jKVNDeV4BK6MOra9vZmiom7yPuHx-CKf1XF19KvQq3gvIVEr57q3XmvRJK8EcanlpKY0bqrLagYwPHBfUsbXDoEBMGZwK_DLjABBlFpptx-PTsD121sM_tvj0lM-n4jRWXTmkp_OlAMpYEBPN2HLOTqrioO-2qrgD3GBfhFLW8N2vFTJTdUD9lMwrtMjZfiqJvXtyGDMwGskaTOcCUaiU9KsrhSyvvu0dje2KbNNOC3eeZ"
+              />
+              
+              {/* Floating UI Overlay */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4/5 h-4/5 flex items-center justify-center">
+                <div className="glass-card p-8 rounded-[1.5rem] shadow-2xl border border-white/60 flex flex-col gap-4 animate-float">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Shield className="text-primary" size={24} />
+                    </div>
+                    <div className="text-left">
+                      <div className="text-[1rem] font-semibold text-on-surface">Private Communcations</div>
+                      <div className="text-[0.75rem] text-on-surface-variant">Verified High-Fidelity Calls</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <span style={{ fontSize: 20, fontWeight: 800, color: '#111', letterSpacing: '-0.5px' }}>Quro Shield</span>
-            <span style={{ fontSize: 13, color: '#6B7280', borderLeft: '1px solid #E5E7EB', paddingLeft: 12, marginLeft: 2 }}>
-              EN ∨
-            </span>
+          </motion.div>
+        </section>
+
+        {/* Features Section */}
+        <section className="px-12 py-32 max-w-screen-2xl mx-auto bg-surface-container-low/50 rounded-t-[3rem]">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+            {/* Column 1: Zero-Friction */}
+            <div className="group flex flex-col items-start p-10 rounded-[1.4rem] bg-surface-container-lowest transition-all hover:translate-y-[-8px] hover:shadow-[0_20px_60px_rgba(0,0,0,0.05)] border border-transparent hover:border-white/60">
+              <div className="w-14 h-14 rounded-xl bg-primary/5 flex items-center justify-center mb-8 group-hover:bg-primary group-hover:text-on-primary transition-colors">
+                <Zap size={28} />
+              </div>
+              <h3 className="text-[1.75rem] font-semibold tracking-tight text-on-surface mb-4">Zero-Friction Web Chat</h3>
+              <p className="text-[1rem] text-on-surface-variant leading-relaxed">
+                Instant connection without account silos. Quro leverages peer-to-peer protocols to ensure speed that feels like thought.
+              </p>
+              <div className="mt-8 pt-8 border-t border-surface-variant w-full">
+                <span className="text-[0.6875rem] font-bold uppercase tracking-widest text-primary">Optimized for Latency</span>
+              </div>
+            </div>
+
+            {/* Column 2: Universal Video */}
+            <div className="group flex flex-col items-start p-10 rounded-[1.4rem] bg-surface-container-lowest transition-all hover:translate-y-[-8px] hover:shadow-[0_20px_60px_rgba(0,0,0,0.05)] border border-transparent hover:border-white/60">
+              <div className="w-14 h-14 rounded-xl bg-secondary/5 flex items-center justify-center mb-8 group-hover:bg-secondary group-hover:text-on-secondary transition-colors">
+                <Video size={28} />
+              </div>
+              <h3 className="text-[1.75rem] font-semibold tracking-tight text-on-surface mb-4">Universal Video Calls</h3>
+              <p className="text-[1rem] text-on-surface-variant leading-relaxed">
+                Borderless communication rendered with spatial precision. Experience high-fidelity audio and 4K visuals through a minimal lens.
+              </p>
+              <div className="mt-8 pt-8 border-t border-surface-variant w-full">
+                <span className="text-[0.6875rem] font-bold uppercase tracking-widest text-secondary">Spatial Computing Ready</span>
+              </div>
+            </div>
+
+            {/* Column 3: Privacy First */}
+            <div className="group flex flex-col items-start p-10 rounded-[1.4rem] bg-surface-container-lowest transition-all hover:translate-y-[-8px] hover:shadow-[0_20px_60px_rgba(0,0,0,0.05)] border border-transparent hover:border-white/60">
+              <div className="w-14 h-14 rounded-xl bg-tertiary/5 flex items-center justify-center mb-8 group-hover:bg-tertiary group-hover:text-on-tertiary transition-colors">
+                <Shield size={28} />
+              </div>
+              <h3 className="text-[1.75rem] font-semibold tracking-tight text-on-surface mb-4">Privacy First</h3>
+              <p className="text-[1rem] text-on-surface-variant leading-relaxed">
+                Zero-knowledge encryption is not an option—it’s the foundation. Your keys never leave your machine, ensuring total data sovereignty.
+              </p>
+              <div className="mt-8 pt-8 border-t border-surface-variant w-full">
+                <span className="text-[0.6875rem] font-bold uppercase tracking-widest text-tertiary">Zero-Cloud Integrity</span>
+              </div>
+            </div>
           </div>
+        </section>
 
-          <div style={{ display: 'flex', gap: 32 }}>
-            <a href="#" className="nav-link">Home</a>
-            <a href="#" className="nav-link" style={{ color: '#2563EB', position: 'relative' }}>
-              Products
-              <div style={{ position: 'absolute', bottom: -20, left: '10%', width: '80%', height: 3, backgroundColor: '#2563EB', borderRadius: '3px 3px 0 0' }} />
-            </a>
-            <a href="#" className="nav-link">Solutions</a>
-            <a href="#" className="nav-link">Live Demo</a>
-            <a href="#" className="nav-link">Pricing</a>
-            <a href="#" className="nav-link">Help Center</a>
+        {/* Editorial Asymmetric Section */}
+        <section className="px-12 py-40 max-w-screen-2xl mx-auto flex flex-col md:flex-row items-center gap-24">
+          <div className="flex-1 relative order-2 md:order-1">
+            <div className="absolute -top-12 -left-12 w-64 h-64 bg-secondary/10 rounded-full blur-[80px]"></div>
+            <img 
+              className="w-full rounded-[2rem] shadow-2xl grayscale hover:grayscale-0 transition-all duration-700 relative z-10" 
+              alt="Macro close-up" 
+              src="https://lh3.googleusercontent.com/aida-public/AB6AXuCCr7SxzxwKqSW8RxkKhfZkSqi-BzKOIzYVCah2QQBpxPzy8-lAT8uwOtQ2MX9Hur19aqILPYaofknYst5HjcNFDintOcd7k1i7vQ6pTiiM1LyagyRocPf4YyXMqBqtThSxP4NZC3et16co2OOKgJl9BKat87WUZRBqC2cizj1mhHPD62SxzyaQLoxjHYPhDgnH6YBPSa3gb2AF0_GBd4WDJ1I-e3JYHC2yCW04roEUHbgTGgiuFNx8VVteS3Fn5WzW-KTHjHY2C6OF"
+            />
           </div>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <a href="/m/welcome" style={{ fontSize: 14, fontWeight: 500, color: '#4B5563', padding: '6px 16px', border: '1px solid #D1D5DB', borderRadius: 20, textDecoration: 'none' }}>
-            Account
-          </a>
-          <a href="/m/agreement?mode=login" style={{ fontSize: 14, fontWeight: 500, color: '#fff', backgroundColor: '#B91C1C', padding: '7px 20px', borderRadius: 20, textDecoration: 'none', boxShadow: '0 4px 12px rgba(185,28,28,0.2)' }}>
-            Face Log In
-          </a>
-        </div>
-      </nav>
-
-      {/* ═══════════════════════ HERO SECTION ═══════════════════════ */}
-      <div style={{
-        backgroundColor: '#F0F5FF',
-        backgroundImage: 'radial-gradient(circle at 100% 50%, #E0E7FF 0%, #F5F8FF 50%, transparent 100%), linear-gradient(0deg, #FFFFFF 0%, #F0F5FF 100%)',
-        padding: '80px 80px 0',
-        position: 'relative',
-        overflow: 'hidden',
-        minHeight: 500,
-        display: 'flex', alignItems: 'center', justifyContent: 'center'
-      }}>
-        {/* Abstract grid background */}
-        <div style={{
-          position: 'absolute', inset: 0, 
-          backgroundImage: 'linear-gradient(rgba(37,99,235,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(37,99,235,0.03) 1px, transparent 1px)',
-          backgroundSize: '40px 40px',
-          transform: 'perspective(500px) rotateX(60deg) translateY(-100px) translateZ(-200px)',
-          pointerEvents: 'none'
-        }} />
-
-        <div style={{ display: 'flex', width: '100%', maxWidth: 1200, position: 'relative', zIndex: 10 }}>
-          {/* Left text */}
-          <div className="animate-slide-left" style={{ flex: 1, paddingTop: 40 }}>
-            <h1 style={{ fontSize: 56, fontWeight: 900, color: '#1E293B', marginBottom: 16 }}>
-              Real-Name Authentication
-            </h1>
-            <p style={{ fontSize: 18, color: '#475569', marginBottom: 20, maxWidth: 480, lineHeight: 1.6 }}>
-              Verify identity authenticity instantly with secure on-device face validation and localized liveness checks.
+          <div className="flex-1 order-1 md:order-2">
+            <h2 className="text-[2.5rem] font-bold text-on-surface mb-6 leading-tight">Designed for modern creators.</h2>
+            <p className="text-[1.125rem] text-on-surface-variant mb-10 leading-relaxed">
+              We believe privacy shouldn't be a trade-off for performance. Quro bridges the gap between secure communication and incredible speed. Everything just works, instantly.
             </p>
             
-            <div style={{ 
-              display: 'inline-block', padding: '6px 14px', backgroundColor: '#FECACA', 
-              color: '#B91C1C', borderRadius: 6, fontSize: 13, fontWeight: 600, marginBottom: 32
-            }}>
-              [NEW] Upgraded for Quro Zero-Cloud Architecture
-            </div>
-
-            <div style={{ display: 'flex', gap: 20 }}>
-              <a href="/m/agreement?mode=register" style={{
-                backgroundColor: '#B91C1C', color: '#fff', fontSize: 16, fontWeight: 600,
-                padding: '12px 36px', borderRadius: 30, textDecoration: 'none', boxShadow: '0 8px 20px rgba(185,28,28,0.25)',
-                display: 'inline-block'
-              }}>
-                New Registration
-              </a>
-              <a href="/m/agreement?mode=login" style={{
-                backgroundColor: '#fff', color: '#B91C1C', border: '1px solid #B91C1C', fontSize: 16, fontWeight: 600,
-                padding: '12px 36px', borderRadius: 30, textDecoration: 'none',
-                display: 'inline-flex', alignItems: 'center', gap: 8
-              }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                </svg>
-                Face Log In
-              </a>
-            </div>
-          </div>
-
-          {/* Right illustration / graphic */}
-          <div 
-            className="animate-pop-in"
-            style={{ flex: 1, position: 'relative', display: 'flex', justifyContent: 'flex-end' }}
-          >
-            <div style={{ position: 'relative', width: 440, height: 440, animation: 'float 6s ease-in-out infinite' }}>
-              {/* Glassmorphism Shield/Person graphic mimicking the reference */}
-              <div style={{ position: 'absolute', top: 40, right: 40, width: 280, height: 280, borderRadius: '50%', background: 'linear-gradient(135deg, #60A5FA, #2563EB)', boxShadow: '0 20px 40px rgba(37,99,235,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <div style={{ width: 140, height: 140, borderRadius: '50%', background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.5)' }} />
+            <div className="space-y-6">
+              <div className="flex items-start gap-4">
+                <CheckCircle2 className="text-primary mt-1" size={24} />
+                <div>
+                  <p className="font-semibold text-on-surface text-[1.125rem]">Zero Friction Access</p>
+                  <p className="text-[0.9375rem] text-on-surface-variant">No bulky downloads required for your guests.</p>
+                </div>
               </div>
-              <div style={{ position: 'absolute', top: 100, right: 140, width: 200, height: 200, borderRadius: '20px', background: 'rgba(255,255,255,0.6)', backdropFilter: 'blur(20px)', border: '2px solid rgba(255,255,255,0.8)', boxShadow: '0 30px 60px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                  <path d="m9 12 2 2 4-4"/>
-                </svg>
-              </div>
-
-              {/* Login QR block floated left */}
-              <div style={{ position: 'absolute', bottom: 40, left: 0, background: '#fff', padding: 20, borderRadius: 16, boxShadow: '0 20px 50px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <img src={qrSrc} alt="Login QR" width={160} height={160} style={{ borderRadius: 8, mixBlendMode: 'multiply' }} />
-                <div style={{ marginTop: 12, fontSize: 13, color: '#4B5563', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/></svg>
-                  Scan to Log In
+              <div className="flex items-start gap-4">
+                <CheckCircle2 className="text-primary mt-1" size={24} />
+                <div>
+                  <p className="font-semibold text-on-surface text-[1.125rem]">Real-time Sync</p>
+                  <p className="text-[0.9375rem] text-on-surface-variant">WebSockets power lightning fast text and video delivery.</p>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </div>
+        </section>
 
-      {/* ═══════════════════════ SUB NAV ═══════════════════════ */}
-      <div style={{ backgroundColor: '#fff', borderBottom: '1px solid #E5E7EB', display: 'flex', justifyContent: 'center' }}>
-        <div style={{ display: 'flex', gap: 60, padding: '20px 0' }}>
-          <div style={{ color: '#B91C1C', fontSize: 16, fontWeight: 600, position: 'relative' }}>
-            Features
-            <div style={{ position: 'absolute', bottom: -20, left: '20%', width: '60%', height: 3, backgroundColor: '#B91C1C' }} />
-          </div>
-          <div style={{ color: '#4B5563', fontSize: 16, fontWeight: 500 }}>Use Cases</div>
-          <div style={{ color: '#4B5563', fontSize: 16, fontWeight: 500 }}>Integration</div>
-          <div style={{ color: '#4B5563', fontSize: 16, fontWeight: 500 }}>Customers</div>
-          <div style={{ color: '#4B5563', fontSize: 16, fontWeight: 500 }}>Documentation</div>
-        </div>
-      </div>
-
-      {/* ═══════════════════════ PRODUCT INTRODUCTION ═══════════════════════ */}
-      <section style={{ padding: '80px 48px', maxWidth: 1200, margin: '0 auto' }}>
-        <h2 style={{ fontSize: 32, fontWeight: 800, color: '#111', textAlign: 'center', marginBottom: 48 }}>
-          Platform Features
-        </h2>
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 24 }}>
-          {/* Card 1 */}
-          <div className="product-card">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
-              <div style={{ width: 40, height: 40, borderRadius: 8, background: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        {/* CTA Canvas */}
+        <section className="px-12 py-32">
+          <div className="max-w-screen-xl mx-auto rounded-[3rem] bg-primary relative overflow-hidden px-12 py-24 text-center">
+            {/* Mesh Gradient Pattern */}
+            <div className="absolute inset-0 opacity-40 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.2)_0%,transparent_100%)]"></div>
+            <div className="relative z-10 flex flex-col items-center">
+              <h2 className="text-[3rem] font-bold text-on-primary tracking-tighter mb-8">Ready for a private future?</h2>
+              <p className="text-on-primary/80 text-[1.125rem] max-w-xl mb-12">
+                Join 50,000+ early adopters who have secured their digital sovereignty. Your link is waiting.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Link href="/auth">
+                  <button className="px-12 py-5 bg-white text-primary font-bold rounded-xl shadow-xl hover:scale-105 transition-transform cursor-pointer">
+                    Get Started
+                  </button>
+                </Link>
               </div>
-              <h3 style={{ fontSize: 20, fontWeight: 700, color: '#111' }}>Real-Name Certification</h3>
             </div>
-            <p style={{ fontSize: 14, color: '#6B7280', lineHeight: 1.6 }}>Core biometric facial modeling captures real-world identity instantly for seamless, passwordless login access.</p>
           </div>
+        </section>
+      </main>
 
-          {/* Card 2 */}
-          <div className="product-card">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
-              <div style={{ width: 40, height: 40, borderRadius: 8, background: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
-              </div>
-              <h3 style={{ fontSize: 20, fontWeight: 700, color: '#111' }}>Local Storage Architecture</h3>
-            </div>
-            <p style={{ fontSize: 14, color: '#6B7280', lineHeight: 1.6 }}>Reject cloud uploads. All facial biometric data, chat logs, and friend lists are encrypted strictly offline via IndexedDB.</p>
+      {/* Footer */}
+      <footer className="bg-surface">
+        <div className="flex flex-col md:flex-row justify-between items-center w-full px-12 py-10 max-w-screen-2xl mx-auto gap-6 border-t border-surface-container">
+          <div className="flex flex-col items-center md:items-start gap-2">
+            <div className="text-[1.25rem] font-black text-on-surface uppercase tracking-widest">Quro</div>
+            <div className="font-label text-[0.6875rem] uppercase tracking-widest text-on-surface-variant/70">© 2026 Quro. Zero-Cloud Local-First.</div>
           </div>
-
-          {/* Card 3 */}
-          <div className="product-card">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
-              <div style={{ width: 40, height: 40, borderRadius: 8, background: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-              </div>
-              <h3 style={{ fontSize: 20, fontWeight: 700, color: '#111' }}>E2E Secure Communication</h3>
+          
+          <div className="flex flex-wrap justify-center gap-8">
+            <Link className="font-label text-[0.6875rem] uppercase tracking-widest text-on-surface-variant/70 hover:text-primary transition-colors" href="#">Terms of Service</Link>
+            <Link className="font-label text-[0.6875rem] uppercase tracking-widest text-on-surface-variant/70 hover:text-primary transition-colors" href="#">Privacy Policy</Link>
+            <Link className="font-label text-[0.6875rem] uppercase tracking-widest text-on-surface-variant/70 hover:text-primary transition-colors" href="#">Security Audit</Link>
+            <Link className="font-label text-[0.6875rem] uppercase tracking-widest text-on-surface-variant/70 hover:text-primary transition-colors" href="#">Contact</Link>
+          </div>
+          
+          <div className="flex gap-4">
+            <div className="w-10 h-10 rounded-full flex items-center justify-center bg-surface-container-low text-on-surface-variant opacity-80 hover:opacity-100 transition-all cursor-pointer">
+              <Globe size={20} />
             </div>
-            <p style={{ fontSize: 14, color: '#6B7280', lineHeight: 1.6 }}>Utilizing a unique Quro Code for decentralized routing, ensuring a tamper-proof and zero-hijack encrypted chat ecosystem.</p>
+            <div className="w-10 h-10 rounded-full flex items-center justify-center bg-surface-container-low text-on-surface-variant opacity-80 hover:opacity-100 transition-all cursor-pointer">
+              <Share2 size={20} />
+            </div>
           </div>
         </div>
-      </section>
-
-      {/* ═══════════════════════ FOOTER ═══════════════════════ */}
-      <footer style={{ backgroundColor: '#111', color: '#666', padding: '40px 0', textAlign: 'center', fontSize: 13 }}>
-        <p style={{ marginBottom: 8 }}>&copy; {new Date().getFullYear()} Quro Shield · Securing Digital Identity Authenticity</p>
-        <p>Value-Added Telecom License: B2-20260401   |   Cloud Security Authority No. 33010000000001</p>
       </footer>
     </div>
   );

@@ -1,39 +1,43 @@
-export default function EmptyChatSelectionPage() {
-  return (
-    <div
-      style={{
-        flex: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: 'var(--color-bg)',
-        gap: 'var(--space-4)',
-      }}
-    >
-      <div style={{ fontSize: '48px' }}>💬</div>
-      <h2
-        style={{
-          fontFamily: 'Inter, sans-serif',
-          fontSize: 'var(--text-xl)',
-          color: 'var(--color-text-primary)',
-          letterSpacing: '-0.5px',
-        }}
-      >
-        Select a conversation
-      </h2>
-      <p
-        style={{
-          fontFamily: 'Inter, sans-serif',
-          fontSize: 'var(--text-sm)',
-          color: 'var(--color-text-secondary)',
-          textAlign: 'center',
-          maxWidth: '300px',
-          lineHeight: 1.5,
-        }}
-      >
-        Choose a friend from the sidebar or scan a new QR code via the mobile app to start an encrypted chat.
-      </p>
-    </div>
-  );
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '../../lib/supabaseClient';
+import { ResponsiveLayout } from '../../components/ResponsiveLayout';
+import { Loader2 } from 'lucide-react';
+
+export default function ChatDashboardPage() {
+  const router = useRouter();
+  const [profile, setProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function checkAuthAndLoadProfile() {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        router.push('/auth');
+        return;
+      }
+
+      const { data } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
+      if (!data) {
+        router.push('/onboarding');
+      } else {
+        setProfile(data);
+      }
+      setLoading(false);
+    }
+    checkAuthAndLoadProfile();
+  }, [router]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen w-full bg-surface">
+        <Loader2 className="animate-spin text-primary" size={48} />
+      </div>
+    );
+  }
+
+  return <ResponsiveLayout profile={profile} />;
 }
