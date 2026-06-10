@@ -80,6 +80,14 @@ export async function getFaceData(): Promise<QuroProfile | null> {
   });
 }
 
+/** Update partial face data + profile */
+export async function updateFaceData(updates: Partial<QuroProfile>): Promise<void> {
+  const current = await getFaceData();
+  if (current) {
+    await saveFaceData({ ...current, ...updates });
+  }
+}
+
 /** Check if user has already registered and verify Master Face Lockdown */
 export async function hasRegistered(): Promise<boolean> {
   if (typeof window !== 'undefined') {

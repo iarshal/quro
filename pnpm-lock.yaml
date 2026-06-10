@@ -112,6 +112,9 @@ importers:
       '@types/crypto-js':
         specifier: ^4.2.2
         version: 4.2.2
+      '@zegocloud/zego-uikit-prebuilt':
+        specifier: ^2.17.3
+        version: 2.17.3
       crypto-js:
         specifier: ^4.2.0
         version: 4.2.0
@@ -2181,6 +2184,9 @@ packages:
     resolution: {integrity: sha512-9k/gHF6n/pAi/9tqr3m3aqkuiNosYTurLLUtc7xQ9sxB/wm7WPygCv8GYa6mS0fLJEHhqMC1ATYhz++U/lRHqg==}
     engines: {node: '>=10.0.0'}
     deprecated: this version has critical issues, please update to the latest version
+
+  '@zegocloud/zego-uikit-prebuilt@2.17.3':
+    resolution: {integrity: sha512-PxRCLwPkwDudRiruHKVDodMZaOrvqW7cXv75RgZITmDpYD33vPLHaXmgZZ0uDhmQUpBZxJ63pj8mzdk/wC+WKA==}
 
   abort-controller@3.0.0:
     resolution: {integrity: sha512-h8lQ8tacZYnR3vNQTgibj+tODHI5/+l06Au2Pcriv/Gmet0eaj4TwWH41sO9wnHDiQsEj19q0drzdWdeAHtweg==}
@@ -8347,6 +8353,8 @@ snapshots:
   '@xmldom/xmldom@0.7.13': {}
 
   '@xmldom/xmldom@0.8.12': {}
+
+  '@zegocloud/zego-uikit-prebuilt@2.17.3': {}
 
   abort-controller@3.0.0:
     dependencies:
