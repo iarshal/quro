@@ -8,9 +8,9 @@ export function middleware(request: NextRequest) {
   const userAgent = request.headers.get('user-agent') || '';
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
 
-  // If mobile user visits root '/', redirect to mobile welcome
+  // If mobile user visits root '/', redirect to mobile login portal
   if (url.pathname === '/' && isMobile) {
-    const redirectUrl = new URL('/m/welcome', request.url);
+    const redirectUrl = new URL('/m/login-portal', request.url);
     return NextResponse.redirect(redirectUrl);
   }
 
