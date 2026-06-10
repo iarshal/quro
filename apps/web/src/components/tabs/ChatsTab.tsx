@@ -32,15 +32,35 @@ export function ChatsTab({ profile }: { profile: any }) {
             .select('*')
             .in('id', friendIds);
             
-          // Combine friendship data with profile data
+          // Fetch all messages related to this user
+          const { data: messages } = await supabase
+            .from('messages')
+            .select('*')
+            .or(`sender_id.eq.${profile.id},receiver_id.eq.${profile.id}`)
+            .order('created_at', { ascending: false });
+
+          // Combine friendship data with profile data and message data
           const enrichedFriends = profilesData?.map(p => {
             const friendship = friendships.find(f => f.user_id === p.id || f.friend_id === p.id);
+            const friendMessages = messages?.filter(m => m.sender_id === p.id || m.receiver_id === p.id) || [];
+            const lastMessage = friendMessages.length > 0 ? friendMessages[0] : null;
+            const unreadCount = friendMessages.filter(m => m.sender_id === p.id && m.receiver_id === profile.id && m.status !== 'seen').length;
+            
             return {
               ...p,
               friendship_date: friendship?.created_at,
-              connected_via: friendship?.connected_via
+              connected_via: friendship?.connected_via,
+              lastMessage,
+              unreadCount
             };
           }) || [];
+          
+          // Sort friends by most recent message, then by friendship date
+          enrichedFriends.sort((a, b) => {
+            const dateA = a.lastMessage ? new Date(a.lastMessage.created_at).getTime() : new Date(a.friendship_date).getTime();
+            const dateB = b.lastMessage ? new Date(b.lastMessage.created_at).getTime() : new Date(b.friendship_date).getTime();
+            return dateB - dateA;
+          });
           
           setFriends(enrichedFriends);
         }
@@ -52,6 +72,15 @@ export function ChatsTab({ profile }: { profile: any }) {
     };
 
     fetchFriends();
+
+    const channel = supabase.channel('chats_tab_updates')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: `receiver_id=eq.${profile.id}` }, () => fetchFriends())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: `sender_id=eq.${profile.id}` }, () => fetchFriends())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [profile.id]);
 
   const filteredFriends = friends.filter(f => 
@@ -96,7 +125,7 @@ export function ChatsTab({ profile }: { profile: any }) {
               onClick={() => router.push(`/chat/${friend.id}`)}
               className="flex items-center px-4 py-3 bg-white active:bg-gray-100 cursor-pointer border-b border-gray-100"
             >
-              <div className="w-12 h-12 rounded-[10px] bg-gray-200 shrink-0 overflow-hidden relative">
+              <div className="w-[50px] h-[50px] rounded-full bg-gray-200 overflow-hidden shrink-0 border border-black/5 flex items-center justify-center">
                 {friend.avatar_url ? (
                   <img src={friend.avatar_url} className="w-full h-full object-cover" />
                 ) : (
@@ -111,12 +140,25 @@ export function ChatsTab({ profile }: { profile: any }) {
                     {friend.name || 'Unknown User'}
                   </h3>
                   <span className="text-xs text-gray-400">
-                    {new Date(friend.friendship_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                    {friend.lastMessage ? new Date(friend.lastMessage.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : new Date(friend.friendship_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                   </span>
                 </div>
-                <p className="text-[14px] text-gray-500 line-clamp-1 leading-tight">
-                  {friend.bio || `Connected via ${friend.connected_via}`}
-                </p>
+                <div className="flex justify-between items-center">
+                  <p className="text-[14px] text-gray-500 line-clamp-1 leading-tight pr-4">
+                    {friend.lastMessage 
+                      ? (friend.lastMessage.type === 'voice' || friend.lastMessage.content?.startsWith('AUDIO:::') ? '🎤 Voice Message' 
+                        : friend.lastMessage.type === 'image' || friend.lastMessage.content?.startsWith('IMAGE:::') ? '📷 Image' 
+                        : friend.lastMessage.type === 'video_call' ? '📹 Video Call'
+                        : friend.lastMessage.type === 'system' ? 'System Message'
+                        : friend.lastMessage.content)
+                      : friend.bio || `Connected via ${friend.connected_via}`}
+                  </p>
+                  {friend.unreadCount > 0 && (
+                    <div className="min-w-[20px] h-[20px] rounded-full bg-red-500 flex items-center justify-center text-white text-[12px] font-bold px-1.5 shrink-0">
+                      {friend.unreadCount}
+                    </div>
+                  )}
+                </div>
               </div>
             </motion.div>
           ))

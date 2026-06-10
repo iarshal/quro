@@ -7,6 +7,19 @@ import QRCode from 'react-qr-code';
 import { Html5Qrcode } from 'html5-qrcode';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../lib/supabaseClient';
+import Cropper from 'react-easy-crop';
+
+async function getCroppedImg(imageSrc: string, pixelCrop: any): Promise<Blob> {
+  const image = new window.Image();
+  image.src = imageSrc;
+  await new Promise(resolve => image.onload = resolve);
+  const canvas = document.createElement('canvas');
+  canvas.width = pixelCrop.width;
+  canvas.height = pixelCrop.height;
+  const ctx = canvas.getContext('2d')!;
+  ctx.drawImage(image, pixelCrop.x, pixelCrop.y, pixelCrop.width, pixelCrop.height, 0, 0, pixelCrop.width, pixelCrop.height);
+  return new Promise(resolve => canvas.toBlob(b => resolve(b!), 'image/jpeg', 0.9));
+}
 
 export function MeTab({ profile }: { profile: any }) {
   const router = useRouter();
@@ -118,19 +131,36 @@ export function MeTab({ profile }: { profile: any }) {
     }
   };
 
-  const handleUploadAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
+  const [showCropModal, setShowCropModal] = useState(false);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setCropImageSrc(reader.result as string);
+        setShowCropModal(true);
+      };
+      reader.readAsDataURL(e.target.files[0]);
+    }
+  };
+
+  const handleUploadAvatar = async () => {
+    if (!cropImageSrc || !croppedAreaPixels) return;
 
     setIsUploading(true);
+    setShowCropModal(false);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${profile.id}-${Math.random()}.${fileExt}`;
+      const blob = await getCroppedImg(cropImageSrc, croppedAreaPixels);
+      const fileName = `${profile.id}-${Math.random()}.jpg`;
       const filePath = `${profile.id}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(filePath, file);
+        .upload(filePath, blob);
 
       if (uploadError) throw uploadError;
 
@@ -143,7 +173,6 @@ export function MeTab({ profile }: { profile: any }) {
         .update({ avatar_url: publicUrl })
         .eq('id', profile.id);
 
-      // Force reload to show new avatar immediately
       window.location.reload();
     } catch (error) {
       console.error('Error uploading avatar:', error);
@@ -168,7 +197,7 @@ export function MeTab({ profile }: { profile: any }) {
       {/* Profile Header Block */}
       <div className="bg-white px-4 pt-4 pb-8 flex items-center mb-2 cursor-pointer active:bg-gray-50 relative">
         <div className="relative">
-          <div className="w-16 h-16 rounded-[10px] overflow-hidden bg-gray-200 shrink-0">
+          <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-200 shrink-0 border border-black/5">
             {profile?.avatar_url ? (
               <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
             ) : (
@@ -179,7 +208,7 @@ export function MeTab({ profile }: { profile: any }) {
           </div>
           <button 
             onClick={(e) => { e.stopPropagation(); setShowEditModal(true); }}
-            className="absolute -bottom-2 -right-2 bg-white rounded-full p-1.5 shadow-sm border border-gray-200 text-gray-500 hover:text-black"
+            className="absolute -bottom-1 -right-1 bg-white rounded-full p-1.5 shadow-sm border border-gray-200 text-gray-500 hover:text-black"
           >
             <Pencil size={12} />
           </button>
@@ -191,7 +220,7 @@ export function MeTab({ profile }: { profile: any }) {
             <BadgeCheck size={20} className="text-[#07C160] fill-[#07C160]/10" />
           </h2>
           <p className="text-[15px] text-gray-500 mb-1">
-            WeChat ID: {profile?.id?.substring(0, 8) || 'wxid_1234'}
+            QURO ID: {profile?.id?.substring(0, 8) || 'quro_1234'}
           </p>
           <p className="text-[13px] text-gray-400 line-clamp-1">
             {profile?.bio || "Tap pencil to add a bio..."}
@@ -218,7 +247,7 @@ export function MeTab({ profile }: { profile: any }) {
         <div className="bg-white">
           <MenuItem icon={Star} label="Favorites" color="#F2C94C" />
         </div>
-        <div className="bg-white">
+        <div className="bg-white" onClick={() => router.push('/settings')}>
           <MenuItem icon={Settings} label="Settings" color="#2F80ED" />
         </div>
       </div>
@@ -237,7 +266,7 @@ export function MeTab({ profile }: { profile: any }) {
             </button>
             <div className="bg-white shadow-2xl rounded-2xl p-8 flex flex-col items-center w-80">
               <div className="flex items-center gap-3 w-full mb-6">
-                <div className="w-12 h-12 rounded bg-gray-200 overflow-hidden">
+                <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden border border-black/5">
                   {profile?.avatar_url && <img src={profile.avatar_url} className="w-full h-full object-cover" />}
                 </div>
                 <div>
@@ -256,7 +285,7 @@ export function MeTab({ profile }: { profile: any }) {
                   style={{ height: "auto", maxWidth: "100%", width: "100%" }} 
                 />
               </div>
-              <p className="text-xs text-gray-400 mt-6 text-center">Scan this QR Code to add me on WeChat.</p>
+              <p className="text-xs text-gray-400 mt-6 text-center">Scan this QR Code to add me on Quro.</p>
             </div>
           </motion.div>
         )}
@@ -299,7 +328,7 @@ export function MeTab({ profile }: { profile: any }) {
                   className="absolute inset-0 z-20 flex items-center justify-center bg-black/50 backdrop-blur-sm p-6"
                 >
                   <div className="bg-white rounded-2xl p-6 shadow-2xl flex flex-col items-center text-black w-full max-w-sm">
-                    <div className="w-20 h-20 rounded-2xl bg-gray-200 overflow-hidden mb-4 shadow-sm">
+                    <div className="w-20 h-20 rounded-full bg-gray-200 overflow-hidden mb-4 shadow-sm border border-black/5">
                       {scannedProfile.avatar_url ? (
                         <img src={scannedProfile.avatar_url} className="w-full h-full object-cover" />
                       ) : (
@@ -351,7 +380,7 @@ export function MeTab({ profile }: { profile: any }) {
             <div className="bg-white rounded-2xl p-6 w-full max-w-sm flex flex-col items-center">
               <h3 className="text-lg font-bold mb-4 text-black">Edit Profile</h3>
               
-              <div className="w-24 h-24 rounded-[16px] bg-gray-100 mb-6 overflow-hidden flex items-center justify-center border-2 border-dashed border-gray-300 relative group cursor-pointer">
+              <div className="w-24 h-24 rounded-full bg-gray-100 mb-6 overflow-hidden flex items-center justify-center border-2 border-dashed border-gray-300 relative group cursor-pointer shadow-sm">
                 {profile?.avatar_url && !isUploading && (
                   <img src={profile.avatar_url} className="absolute inset-0 w-full h-full object-cover opacity-50" />
                 )}
@@ -360,8 +389,8 @@ export function MeTab({ profile }: { profile: any }) {
                 ) : (
                   <label className="cursor-pointer w-full h-full flex flex-col items-center justify-center text-black z-10">
                     <ImageIcon size={24} className="mb-1" />
-                    <span className="text-[10px] font-medium">Update Pic</span>
-                    <input type="file" accept="image/*" className="hidden" onChange={handleUploadAvatar} />
+                    <span className="text-[10px] font-medium text-center leading-tight">Update<br/>Pic</span>
+                    <input type="file" accept="image/*" className="hidden" onChange={handleFileSelect} />
                   </label>
                 )}
               </div>
@@ -402,6 +431,50 @@ export function MeTab({ profile }: { profile: any }) {
                   Save
                 </button>
               </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Crop Modal */}
+        {showCropModal && cropImageSrc && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] bg-black flex flex-col"
+          >
+            <div className="flex justify-between items-center p-4 bg-black text-white z-10 shrink-0">
+              <button onClick={() => { setShowCropModal(false); setCropImageSrc(null); }} className="text-white px-2">Cancel</button>
+              <h2 className="text-lg font-medium">Crop Photo</h2>
+              <button onClick={handleUploadAvatar} className="text-[#07C160] px-2 font-semibold">Done</button>
+            </div>
+            
+            <div className="flex-1 relative">
+              <Cropper
+                image={cropImageSrc}
+                crop={crop}
+                zoom={zoom}
+                aspect={1}
+                cropShape="round"
+                showGrid={false}
+                onCropChange={setCrop}
+                onCropComplete={(_, croppedPixels) => setCroppedAreaPixels(croppedPixels)}
+                onZoomChange={setZoom}
+              />
+            </div>
+            
+            <div className="p-8 shrink-0 bg-black flex flex-col items-center">
+              <input
+                type="range"
+                value={zoom}
+                min={1}
+                max={3}
+                step={0.1}
+                aria-labelledby="Zoom"
+                onChange={(e) => setZoom(Number(e.target.value))}
+                className="w-full max-w-xs accent-[#07C160]"
+              />
+              <p className="text-gray-400 text-xs mt-4">Pinch or use slider to zoom</p>
             </div>
           </motion.div>
         )}

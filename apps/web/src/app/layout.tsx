@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import GlobalCallListener from '../components/GlobalCallListener';
 
 export const metadata: Metadata = {
   manifest: '/manifest.json',
@@ -42,7 +43,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body>{children}</body>
+      <body>
+        {children}
+        <GlobalCallListener />
+      </body>
     </html>
   );
 }

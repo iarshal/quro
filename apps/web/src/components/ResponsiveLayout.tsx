@@ -29,7 +29,7 @@ export function ResponsiveLayout({ profile }: { profile: any }) {
   };
 
   const getHeaderTitle = () => {
-    if (activeTab === 'chats') return 'WeChat';
+    if (activeTab === 'chats') return 'Quro';
     if (activeTab === 'me') return ''; // Empty title for Me tab
     return tabs.find(t => t.id === activeTab)?.label;
   };
