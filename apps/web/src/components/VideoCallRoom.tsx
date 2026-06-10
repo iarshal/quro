@@ -84,7 +84,11 @@ export default function VideoCallRoom({
         };
 
         // 3. Set up Supabase signaling channel
-        const channel = supabase.channel(`webrtc_${roomID}`);
+        const channel = supabase.channel(`webrtc_${roomID}`, {
+          config: {
+            broadcast: { ack: false, self: false },
+          },
+        });
         channelRef.current = channel;
 
         let handshakeInterval: any;
