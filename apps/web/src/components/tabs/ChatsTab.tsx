@@ -6,11 +6,21 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabaseClient';
 import { motion } from 'framer-motion';
 
+let globalCachedFriends: any[] = [];
+let globalHasFetched = false;
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('messages_seen', (e: any) => {
+    const { friendId } = e.detail;
+    globalCachedFriends = globalCachedFriends.map(f => f.id === friendId ? { ...f, unreadCount: 0 } : f);
+  });
+}
+
 export function ChatsTab({ profile }: { profile: any }) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
-  const [friends, setFriends] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [friends, setFriends] = useState<any[]>(globalCachedFriends);
+  const [loading, setLoading] = useState(!globalHasFetched);
 
   useEffect(() => {
     const fetchFriends = async () => {
@@ -62,6 +72,8 @@ export function ChatsTab({ profile }: { profile: any }) {
             return dateB - dateA;
           });
           
+          globalCachedFriends = enrichedFriends;
+          globalHasFetched = true;
           setFriends(enrichedFriends);
         }
       } catch (err) {
@@ -73,13 +85,30 @@ export function ChatsTab({ profile }: { profile: any }) {
 
     fetchFriends();
 
+    let timeoutId: NodeJS.Timeout;
+    const debouncedFetchFriends = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        fetchFriends();
+      }, 500);
+    };
+
     const channel = supabase.channel('chats_tab_updates')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: `receiver_id=eq.${profile.id}` }, () => fetchFriends())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: `sender_id=eq.${profile.id}` }, () => fetchFriends())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: `receiver_id=eq.${profile.id}` }, debouncedFetchFriends)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: `sender_id=eq.${profile.id}` }, debouncedFetchFriends)
       .subscribe();
 
+    const handleMessagesSeen = (e: any) => {
+      const { friendId } = e.detail;
+      globalCachedFriends = globalCachedFriends.map(f => f.id === friendId ? { ...f, unreadCount: 0 } : f);
+      setFriends(globalCachedFriends);
+    };
+    window.addEventListener('messages_seen', handleMessagesSeen);
+
     return () => {
+      clearTimeout(timeoutId);
       supabase.removeChannel(channel);
+      window.removeEventListener('messages_seen', handleMessagesSeen);
     };
   }, [profile.id]);
 
@@ -108,9 +137,7 @@ export function ChatsTab({ profile }: { profile: any }) {
 
       {/* Friends List */}
       <div className="flex-1 overflow-y-auto">
-        {loading ? (
-          <div className="flex justify-center p-8 text-gray-400 text-sm animate-pulse">Loading chats...</div>
-        ) : friends.length === 0 ? (
+        {loading ? null : friends.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-12 text-center text-gray-400">
             <UserRound size={48} className="mb-4 text-gray-300" />
             <p className="text-lg font-medium text-gray-600 mb-2">No friends yet</p>

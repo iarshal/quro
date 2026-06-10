@@ -57,6 +57,11 @@ export default function GlobalCallListener() {
             // They hung up
             setCallState('idle');
           }
+
+          // Mark standard messages as delivered since the app is actively running
+          if (msg.status === 'sent' && !msg.type.startsWith('video_call') && msg.type !== 'system') {
+            supabase.from('messages').update({ status: 'delivered' }).eq('id', msg.id).then();
+          }
         })
         .subscribe();
 

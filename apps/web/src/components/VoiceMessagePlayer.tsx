@@ -11,22 +11,7 @@ export default function VoiceMessagePlayer({ src, isMe }: VoiceMessagePlayerProp
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
-  const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
-
-  useEffect(() => {
-    // Fetch the audio entirely to avoid Safari HTTP streaming bugs with WebM/MP4 blobs
-    const fetchAudio = async () => {
-      try {
-        const response = await fetch(src);
-        const blob = await response.blob();
-        setBlobUrl(URL.createObjectURL(blob));
-      } catch (err) {
-        console.error("Failed to load audio blob, falling back to src", err);
-      }
-    };
-    fetchAudio();
-  }, [src]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -48,6 +33,9 @@ export default function VoiceMessagePlayer({ src, isMe }: VoiceMessagePlayerProp
       setIsPlaying(false);
       setProgress(0);
       setCurrentTime(0);
+      if (audio) {
+        audio.currentTime = 0;
+      }
     };
 
     audio.addEventListener('loadedmetadata', setAudioData);
@@ -94,16 +82,16 @@ export default function VoiceMessagePlayer({ src, isMe }: VoiceMessagePlayerProp
   };
 
   return (
-    <div className={`flex items-center gap-3 w-[220px] ${isMe ? 'text-black' : 'text-black'}`}>
-      <audio ref={audioRef} src={blobUrl || src} preload="metadata" />
+    <div className={`flex items-center gap-2 md:gap-3 w-[180px] md:w-[220px] ${isMe ? 'text-black' : 'text-black'}`}>
+      <audio ref={audioRef} src={src} preload="metadata" />
       
       <button 
         onClick={togglePlayPause}
-        className={`w-10 h-10 shrink-0 rounded-full flex items-center justify-center transition-colors ${
+        className={`w-8 h-8 md:w-10 md:h-10 shrink-0 rounded-full flex items-center justify-center transition-colors ${
           isMe ? 'text-black' : 'text-gray-600'
         }`}
       >
-        {isPlaying ? <Pause size={24} fill="currentColor" /> : <Play size={24} fill="currentColor" className="ml-1" />}
+        {isPlaying ? <Pause className="w-4 h-4 md:w-6 md:h-6" fill="currentColor" /> : <Play className="w-4 h-4 md:w-6 md:h-6 ml-1" fill="currentColor" />}
       </button>
 
       <div className="flex flex-col flex-1">

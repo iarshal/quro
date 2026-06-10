@@ -35,7 +35,7 @@ export function ResponsiveLayout({ profile }: { profile: any }) {
   };
 
   return (
-    <div className="flex flex-col h-screen w-full bg-[#EDEDED] overflow-hidden text-black font-sans">
+    <div className="flex flex-col h-screen w-full bg-[#EDEDED] overflow-hidden text-black font-sans relative">
       
       {/* WECHAT TOP APP BAR */}
       <header className={`flex items-center justify-between px-4 h-14 shrink-0 z-50 ${activeTab === 'me' ? 'bg-white' : 'bg-[#EDEDED]'}`}>

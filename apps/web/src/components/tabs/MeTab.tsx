@@ -41,7 +41,7 @@ export function MeTab({ profile }: { profile: any }) {
       }
       await scannerRef.current.start(
         { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 250, height: 250 } },
+        { fps: 10 },
         (decodedText) => {
           setScanResult(decodedText);
           scannerRef.current?.stop();
@@ -256,6 +256,7 @@ export function MeTab({ profile }: { profile: any }) {
         {/* QR Code Modal */}
         {showQRModal && (
           <motion.div 
+            key="qr-modal"
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 50 }}
@@ -293,32 +294,51 @@ export function MeTab({ profile }: { profile: any }) {
         {/* Scanner Modal */}
         {showScannerModal && (
           <motion.div 
+            key="scanner-modal"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[100] bg-black flex flex-col"
           >
-            <div className="flex justify-between items-center p-6 bg-black text-white z-10">
-              <button onClick={stopScanner} className="p-2">
+            <div className="absolute top-0 left-0 right-0 p-6 flex justify-between items-center z-20 pointer-events-none">
+              <button onClick={stopScanner} className="p-2 text-white bg-black/30 rounded-full backdrop-blur-md pointer-events-auto">
                 <X size={28} />
               </button>
-              <h2 className="text-lg font-medium">Scan QR Code</h2>
-              <div className="w-8"></div>
+              <h2 className="text-lg font-medium text-white shadow-sm">Scan QR Code</h2>
+              <div className="w-12"></div>
             </div>
             
-            <div className="flex-1 relative bg-black flex flex-col items-center justify-center">
-              <div id="qr-reader" className="w-full max-w-sm overflow-hidden" style={{ borderRadius: '12px' }}></div>
+            <div className="flex-1 relative bg-black flex flex-col items-center justify-center h-full w-full">
+              {/* Full screen scanner container */}
+              <div id="qr-reader" className="absolute inset-0 w-full h-full object-cover [&>video]:object-cover [&>video]:w-full [&>video]:h-full"></div>
               
               {!scanResult && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-                  <div className="w-64 h-64 border-2 border-[#07C160] opacity-50 relative">
-                    <motion.div 
-                      className="absolute left-0 right-0 h-0.5 bg-[#07C160] shadow-[0_0_10px_#07C160]"
-                      animate={{ top: ['0%', '100%', '0%'] }}
-                      transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                    />
+                <>
+                  {/* Scanner reticle / overlay */}
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                    <div className="w-72 h-72 border-2 border-[#07C160] opacity-80 relative shadow-[0_0_0_9999px_rgba(0,0,0,0.6)] rounded-lg overflow-hidden">
+                      <motion.div 
+                        className="absolute left-0 right-0 h-0.5 bg-[#07C160] shadow-[0_0_15px_3px_#07C160]"
+                        animate={{ top: ['0%', '100%', '0%'] }}
+                        transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
+                      />
+                    </div>
                   </div>
-                </div>
+                  
+                  {/* My QR Code Button */}
+                  <div className="absolute bottom-16 left-0 right-0 flex justify-center z-20 pointer-events-auto">
+                    <button 
+                      onClick={() => { 
+                        stopScanner(); 
+                        setShowQRModal(true); 
+                      }}
+                      className="px-6 py-3 bg-black/50 hover:bg-black/70 backdrop-blur-md border border-white/20 text-white rounded-full font-medium flex items-center gap-2 transition-all active:scale-95"
+                    >
+                      <QrCode size={20} />
+                      My QR Code
+                    </button>
+                  </div>
+                </>
               )}
               {/* Scan Result Prompt - Centered Modal */}
               {scanResult && scannedProfile && (
@@ -372,6 +392,7 @@ export function MeTab({ profile }: { profile: any }) {
         {/* Edit Profile Modal */}
         {showEditModal && (
           <motion.div 
+            key="edit-modal"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -438,6 +459,7 @@ export function MeTab({ profile }: { profile: any }) {
         {/* Crop Modal */}
         {showCropModal && cropImageSrc && (
           <motion.div 
+            key="crop-modal"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

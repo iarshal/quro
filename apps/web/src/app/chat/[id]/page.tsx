@@ -8,16 +8,21 @@ import { motion, AnimatePresence } from 'framer-motion';
 import VoiceMessagePlayer from '../../../components/VoiceMessagePlayer';
 import VideoCallRoom from '../../../components/VideoCallRoom';
 
+const messageCache: Record<string, any[]> = {};
+const friendProfileCache: Record<string, any> = {};
+let globalMyUser: any = null;
+
 export default function RealChatPage() {
   const router = useRouter();
   const params = useParams();
   const friendId = params.id as string;
   
-  const [myUser, setMyUser] = useState<any>(null);
-  const [friendProfile, setFriendProfile] = useState<any>(null);
+  const [myUser, setMyUser] = useState<any>(globalMyUser);
+  const [friendProfile, setFriendProfile] = useState<any>(friendProfileCache[friendId] || null);
   const [friendshipDetails, setFriendshipDetails] = useState<any>(null);
   
-  const [messages, setMessages] = useState<any[]>([]);
+  const [messages, setMessages] = useState<any[]>(messageCache[friendId] || []);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(!messageCache[friendId]);
   const [input, setInput] = useState("");
   
   const [isFriendOnline, setIsFriendOnline] = useState(false);
@@ -57,11 +62,15 @@ export default function RealChatPage() {
       // 1. Fetch current user
       const { data: { user } } = await supabase.auth.getUser();
       if (!user || isCancelled) return;
+      globalMyUser = user;
       setMyUser(user);
       
       // 2. Fetch friend profile
       const { data: fProfile } = await supabase.from('profiles').select('*').eq('id', friendId).single();
-      if (fProfile) setFriendProfile(fProfile);
+      if (fProfile) {
+        friendProfileCache[friendId] = fProfile;
+        setFriendProfile(fProfile);
+      }
 
       // 3. Fetch friendship details
       const { data: fship } = await supabase
@@ -86,9 +95,13 @@ export default function RealChatPage() {
           msgs.forEach(m => {
             if (unreadIds.includes(m.id)) m.status = 'seen';
           });
+          // Dispatch local event for instant UI update
+          window.dispatchEvent(new CustomEvent('messages_seen', { detail: { friendId } }));
         }
 
+        messageCache[friendId] = msgs;
         setMessages(msgs);
+        setIsLoadingMessages(false);
 
         // Compute block state
         let _iBlockedThem = false;
@@ -130,6 +143,8 @@ export default function RealChatPage() {
             });
             // Mark as read in DB if chat is open
             supabase.from('messages').update({ status: 'seen' }).eq('id', newMsg.id).then();
+            // Dispatch local event for instant UI update
+            window.dispatchEvent(new CustomEvent('messages_seen', { detail: { friendId } }));
           }
         })
         .on('postgres_changes', {
@@ -137,7 +152,7 @@ export default function RealChatPage() {
           schema: 'public',
           table: 'messages',
         }, payload => {
-          setMessages(prev => prev.map(m => m.id === payload.new.id ? payload.new : m));
+          setMessages(prev => prev.map(m => m.id === payload.new.id ? { ...m, ...payload.new } : m));
         })
         .subscribe();
 
@@ -199,6 +214,24 @@ export default function RealChatPage() {
     };
   }, [friendId]);
 
+  const acceptFriendRequest = async (msg: any) => {
+    try {
+      await supabase.from('friends').insert({ user_id: myUser.id, friend_id: msg.sender_id, connected_via: 'Search ID' }).catch(() => {});
+      await supabase.from('friends').insert({ user_id: msg.sender_id, friend_id: myUser.id, connected_via: 'Search ID' }).catch(() => {});
+      await supabase.from('messages').update({ type: 'friend_request_accepted', content: 'Friend request accepted.' }).eq('id', msg.id);
+    } catch (e) {
+      console.error('Error accepting friend request', e);
+    }
+  };
+
+  const declineFriendRequest = async (msg: any) => {
+    try {
+      await supabase.from('messages').update({ type: 'friend_request_declined', content: 'Friend request declined.' }).eq('id', msg.id);
+    } catch (e) {
+      console.error('Error declining friend request', e);
+    }
+  };
+
   // Presence state updates
   useEffect(() => {
     if (presenceChannelRef.current && mounted && myUser) {
@@ -211,9 +244,16 @@ export default function RealChatPage() {
     }
   }, [isTypingLocal, isRecording, myUser, mounted]);
 
+  const isInitialScrollRef = useRef(true);
+
   // Scroll to bottom
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messages.length > 0 && isInitialScrollRef.current) {
+      endRef.current?.scrollIntoView({ behavior: "instant" });
+      isInitialScrollRef.current = false;
+    } else {
+      endRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
   }, [messages, isRecording]);
 
   const handleSend = async () => {
@@ -254,7 +294,15 @@ export default function RealChatPage() {
       // Start recording
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        const mediaRecorder = new MediaRecorder(stream);
+        
+        let mimeType = 'audio/webm';
+        if (MediaRecorder.isTypeSupported('audio/mp4')) {
+          mimeType = 'audio/mp4';
+        } else if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+          mimeType = 'audio/webm;codecs=opus';
+        }
+        
+        const mediaRecorder = new MediaRecorder(stream, { mimeType });
         mediaRecorderRef.current = mediaRecorder;
         audioChunksRef.current = [];
 
@@ -307,7 +355,7 @@ export default function RealChatPage() {
           stream.getTracks().forEach(track => track.stop());
         };
 
-        mediaRecorder.start();
+        mediaRecorder.start(200);
         setIsRecording(true);
         recordingTimerRef.current = setInterval(() => {
           setRecordingTime(prev => prev + 1);
@@ -418,7 +466,12 @@ export default function RealChatPage() {
         )}
       </AnimatePresence>
 
-      <div className="flex flex-col h-screen w-full bg-[#EDEDED] font-sans">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.98 }} 
+        animate={{ opacity: 1, scale: 1 }} 
+        transition={{ duration: 0.2, ease: 'easeOut' }}
+        className="flex flex-col h-screen w-full bg-[#EDEDED] overflow-hidden text-black font-sans relative"
+      >
         <header className="flex items-center justify-between px-2 h-14 bg-[#EDEDED] shrink-0 z-40 border-b border-gray-300 relative">
           <div className="flex items-center gap-1 cursor-pointer" onClick={() => router.push('/chat')}>
             <ChevronLeft size={28} className="text-black -ml-1" />
@@ -431,10 +484,19 @@ export default function RealChatPage() {
                 )}
               </div>
               <div className="flex flex-col ml-3 flex-1 overflow-hidden">
-                <span className="text-[17px] font-bold text-black truncate">
-                  {friendProfile?.name || friendProfile?.display_name || "Friend"}
-                </span>
-                {isFriendRecording ? <span className="text-[13px] text-[#07C160]">recording audio...</span> : isFriendTyping ? <span className="text-[13px] text-[#07C160]">typing...</span> : isFriendOnline ? <span className="text-[13px] text-[#07C160]">Online</span> : <span className="text-[13px] text-gray-500">Offline</span>}
+                {friendProfile ? (
+                  <>
+                    <span className="text-[17px] font-bold text-black truncate">
+                      {friendProfile.name || friendProfile.display_name || "Friend"}
+                    </span>
+                    {isFriendRecording ? <span className="text-[13px] text-[#07C160]">recording audio...</span> : isFriendTyping ? <span className="text-[13px] text-[#07C160]">typing...</span> : isFriendOnline ? <span className="text-[13px] text-[#07C160]">Online</span> : <span className="text-[13px] text-gray-500">Offline</span>}
+                  </>
+                ) : (
+                  <>
+                    <div className="w-24 h-4 bg-gray-300 rounded animate-pulse mb-1"></div>
+                    <div className="w-12 h-3 bg-gray-200 rounded animate-pulse"></div>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -472,79 +534,98 @@ export default function RealChatPage() {
           </AnimatePresence>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-4 flex flex-col gap-1 relative">
-          <div className="text-center text-xs text-gray-400 mb-6">
-            Today {mounted ? new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
-          </div>
+        <main className="flex-1 overflow-y-auto p-4 flex flex-col relative w-full">
+          <div className="w-full flex flex-col gap-1">
+            {isLoadingMessages ? (
+                <div className="flex justify-center items-center py-10">
+                  <Loader2 className="animate-spin text-gray-400" size={24} />
+                </div>
+              ) : messages.length === 0 ? (
+                <div className="text-center text-xs text-gray-400 my-4 uppercase tracking-wider font-semibold">
+                  This is the start of your secure conversation
+                </div>
+              ) : (
+                <div className="text-center text-xs text-gray-400 my-4 uppercase tracking-wider font-semibold">
+                  Start of conversation
+                </div>
+              )}
+              
+            {messages.filter(m => m.type !== 'system').map((msg, index) => {
+              const isMe = msg.sender_id === myUser?.id;
+              const nextMsg = messages[index + 1];
+              const isLastInGroup = !nextMsg || nextMsg.sender_id !== msg.sender_id;
+              const showAvatarAndTail = isLastInGroup;
+              const timeStr = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-          {messages.filter(m => m.type !== 'system').map((msg, index) => {
-            const isMe = msg.sender_id === myUser?.id;
-            const nextMsg = messages[index + 1];
-            const isLastInGroup = !nextMsg || nextMsg.sender_id !== msg.sender_id;
-            const showAvatarAndTail = isLastInGroup;
-            const timeStr = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+              const isCallSystemMessage = (msg.content && (msg.content.includes('Call accepted') || msg.content.includes('Call ended') || msg.content.includes('Incoming video call') || msg.content.includes('Call declined')));
 
-            return (
-              <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} ${showAvatarAndTail ? 'mb-4' : 'mb-1'}`}>
-                {!isMe && (
-                  <div className="w-10 shrink-0 mr-3 flex items-end">
-                    {showAvatarAndTail ? (
-                      <div className="w-10 h-10 rounded-full bg-gray-300 overflow-hidden flex items-center justify-center text-white font-bold text-lg shadow-sm">
-                        {friendProfile?.avatar_url ? <img src={friendProfile.avatar_url} className="w-full h-full object-cover" /> : <UserRound size={20} />}
-                      </div>
-                    ) : <div className="w-10" />}
-                  </div>
-                )}
-
-                <div className={`max-w-[70%] rounded-lg p-3 text-[16px] leading-relaxed relative flex flex-col ${isMe ? 'bg-[#95EC69] text-black shadow-sm' : 'bg-white text-black shadow-sm'}`}>
-                  {showAvatarAndTail && (
-                    <div className={`absolute top-3 w-0 h-0 border-t-8 border-t-transparent border-b-8 border-b-transparent ${isMe ? 'right-[-6px] border-l-[8px] border-l-[#95EC69]' : 'left-[-6px] border-r-[8px] border-r-white'}`}></div>
-                  )}
-                  {msg.content?.startsWith('AUDIO:::') || msg.type === 'voice' ? (
-                    <VoiceMessagePlayer src={msg.media_url || msg.content.replace('AUDIO:::', '')} isMe={isMe} />
-                  ) : msg.content?.startsWith('IMAGE:::') || msg.type === 'image' ? (
-                    <div className="w-[200px] h-auto overflow-hidden rounded-md border border-gray-200/20"><img src={msg.media_url || msg.content?.replace('IMAGE:::', '')} alt="Shared image" className="w-full h-full object-cover" /></div>
-                  ) : msg.type === 'video_call' ? (
-                    <div className="flex items-center gap-3">
-                      <div className="bg-gray-100 p-2 rounded-full"><Video size={20} className="text-[#07C160]" /></div>
-                      <div className="flex flex-col">
-                        <span className="font-medium text-[15px]">Video Call</span>
-                        <button onClick={() => setInVideoCall(true)} className="text-[#07C160] font-semibold text-[14px] text-left mt-1">Tap to join</button>
+              return (
+                <div key={msg.id} className="flex flex-col">
+                  {/* MESSAGE ROW */}
+                  <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} ${showAvatarAndTail ? 'mb-4' : 'mb-1'}`}>
+                    <div className={`max-w-[85%] md:max-w-[80%] rounded-lg p-2.5 md:p-3 text-[15px] md:text-[16px] leading-relaxed relative flex flex-col ${isMe ? 'bg-[#95EC69] text-black shadow-sm' : 'bg-white text-black shadow-sm'}`}>
+                      {/* Tails */}
+                      {showAvatarAndTail && (
+                        <div className={`absolute top-3 w-0 h-0 border-t-8 border-t-transparent border-b-8 border-b-transparent ${isMe ? 'right-[-6px] border-l-[8px] border-l-[#95EC69]' : 'left-[-6px] border-r-[8px] border-r-white'}`}></div>
+                      )}
+                      
+                      {msg.content?.startsWith('AUDIO:::') || msg.type === 'voice' ? (
+                        <VoiceMessagePlayer src={msg.media_url || msg.content.replace('AUDIO:::', '')} isMe={isMe} />
+                      ) : msg.content?.startsWith('IMAGE:::') || msg.type === 'image' ? (
+                        <div className="w-[200px] md:w-[300px] h-auto overflow-hidden rounded-md border border-gray-200/20"><img src={msg.media_url || msg.content?.replace('IMAGE:::', '')} alt="Shared image" className="w-full h-full object-cover" /></div>
+                      ) : msg.type === 'video_call' ? (
+                        <div className="flex items-center gap-3">
+                          <div className="bg-gray-100 p-2 rounded-full"><Video size={20} className="text-[#07C160]" /></div>
+                          <div className="flex flex-col">
+                            <span className="font-medium text-[15px]">Video Call</span>
+                            <button onClick={() => setInVideoCall(true)} className="text-[#07C160] font-semibold text-[14px] text-left mt-1">Tap to join</button>
+                          </div>
+                        </div>
+                      ) : msg.type === 'friend_request' ? (
+                        <div className="flex flex-col gap-3 min-w-[200px]">
+                          <span className="font-medium text-[15px]">Friend Request</span>
+                          {!isMe && (
+                            <div className="flex gap-2 mt-1">
+                              <button onClick={() => acceptFriendRequest(msg)} className="flex-1 bg-[#07C160] text-white py-1.5 rounded-md text-[14px] font-semibold active:opacity-80 transition-opacity">Accept</button>
+                              <button onClick={() => declineFriendRequest(msg)} className="flex-1 bg-gray-100 text-gray-700 py-1.5 rounded-md text-[14px] font-semibold active:bg-gray-200 transition-colors">Decline</button>
+                            </div>
+                          )}
+                          {isMe && <span className="text-[13px] text-gray-500 italic">Request sent... waiting for approval</span>}
+                        </div>
+                      ) : msg.type === 'friend_request_accepted' ? (
+                        <div className="flex items-center gap-2">
+                          <div className="bg-[#07C160]/10 p-1.5 rounded-full"><UserRound size={16} className="text-[#07C160]" /></div>
+                          <span className="text-[15px] italic text-black/80">{msg.content}</span>
+                        </div>
+                      ) : msg.type === 'friend_request_declined' ? (
+                        <div className="flex items-center gap-2">
+                          <span className="text-[15px] italic text-black/50">{msg.content}</span>
+                        </div>
+                      ) : (
+                        <span className="break-words">{msg.content}</span>
+                      )}
+                      
+                      <div className="flex items-center justify-end gap-1 mt-1 opacity-70 text-[11px]">
+                        <span>{timeStr}</span>
+                        {isMe && (
+                          <span className="ml-1 tracking-tighter flex">
+                            {msg.status === 'seen' ? (
+                              <span className="text-blue-500 font-bold tracking-[-2px]">✓✓</span>
+                            ) : msg.status === 'delivered' ? (
+                              <span className="text-gray-500 font-bold tracking-[-2px]">✓✓</span>
+                            ) : (
+                              <span className="text-gray-500 font-bold">✓</span>
+                            )}
+                          </span>
+                        )}
                       </div>
                     </div>
-                  ) : (
-                    <span className="break-words">{msg.content}</span>
-                  )}
-                  
-                  <div className="flex items-center justify-end gap-1 mt-1 opacity-70 text-[11px]">
-                    <span>{timeStr}</span>
-                    {isMe && (
-                      <span className="ml-1 tracking-tighter flex">
-                        {msg.status === 'seen' ? (
-                          <span className="text-blue-500 font-bold tracking-[-2px]">✓✓</span>
-                        ) : msg.status === 'delivered' ? (
-                          <span className="text-gray-500 font-bold tracking-[-2px]">✓✓</span>
-                        ) : (
-                          <span className="text-gray-500 font-bold">✓</span>
-                        )}
-                      </span>
-                    )}
                   </div>
                 </div>
-                
-                {isMe && (
-                  <div className="w-10 shrink-0 ml-3 flex items-end">
-                    {showAvatarAndTail ? (
-                      <div className="w-10 h-10 rounded-full bg-[#07C160] overflow-hidden flex items-center justify-center text-white font-bold text-lg shadow-sm">
-                        {myUser?.user_metadata?.display_name?.charAt(0) || <UserRound size={20} />}
-                      </div>
-                    ) : <div className="w-10" />}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-          <div ref={endRef} />
+              );
+            })}
+            <div ref={endRef} />
+          </div>
         </main>
 
         <div className="bg-[#F7F7F7] border-t border-gray-300 pb-safe shrink-0 flex flex-col">
@@ -608,7 +689,7 @@ export default function RealChatPage() {
             </>
           )}
         </div>
-      </div>
+      </motion.div>
       <div style={{ display: 'none' }}></div>
     </>
   );

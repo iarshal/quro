@@ -11,7 +11,7 @@ export default function LandingPage() {
       <MouseGlow />
       {/* TopNavBar */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-surface/80 backdrop-blur-xl shadow-[0_4px_30px_rgba(0,0,0,0.04),0_10px_50px_rgba(0,88,190,0.06)]">
-        <nav className="flex justify-between items-center w-full px-12 py-6 max-w-screen-2xl mx-auto">
+        <nav className="flex justify-between items-center w-full px-6 md:px-12 py-6 max-w-screen-2xl mx-auto">
           <div className="text-[1.75rem] font-bold tracking-tighter text-primary">Quro</div>
           <div className="hidden md:flex items-center gap-10">
             <Link className="font-body text-[1rem] tracking-tight text-on-surface-variant/80 hover:text-primary transition-all duration-300" href="#">Features</Link>
@@ -30,7 +30,7 @@ export default function LandingPage() {
 
       <main className="relative pt-32 ethereal-gradient min-h-screen">
         {/* Hero Section */}
-        <section className="relative px-12 pt-20 pb-32 max-w-screen-2xl mx-auto flex flex-col items-center text-center">
+        <section className="relative px-6 md:px-12 pt-20 pb-32 max-w-screen-2xl mx-auto flex flex-col items-center text-center">
           <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-primary/5 blur-[120px] rounded-full -z-10"></div>
           
           <motion.span 
@@ -110,7 +110,7 @@ export default function LandingPage() {
         </section>
 
         {/* Features Section */}
-        <section className="px-12 py-32 max-w-screen-2xl mx-auto bg-surface-container-low/50 rounded-t-[3rem]">
+        <section className="px-6 md:px-12 py-32 max-w-screen-2xl mx-auto bg-surface-container-low/50 rounded-t-[3rem]">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
             {/* Column 1: Zero-Friction */}
             <div className="group flex flex-col items-start p-10 rounded-[1.4rem] bg-surface-container-lowest transition-all hover:translate-y-[-8px] hover:shadow-[0_20px_60px_rgba(0,0,0,0.05)] border border-transparent hover:border-white/60">
@@ -157,7 +157,7 @@ export default function LandingPage() {
         </section>
 
         {/* Editorial Asymmetric Section */}
-        <section className="px-12 py-40 max-w-screen-2xl mx-auto flex flex-col md:flex-row items-center gap-24">
+        <section className="px-6 md:px-12 py-40 max-w-screen-2xl mx-auto flex flex-col md:flex-row items-center gap-24">
           <div className="flex-1 relative order-2 md:order-1">
             <div className="absolute -top-12 -left-12 w-64 h-64 bg-secondary/10 rounded-full blur-[80px]"></div>
             <img 
@@ -192,8 +192,8 @@ export default function LandingPage() {
         </section>
 
         {/* CTA Canvas */}
-        <section className="px-12 py-32">
-          <div className="max-w-screen-xl mx-auto rounded-[3rem] bg-primary relative overflow-hidden px-12 py-24 text-center">
+        <section className="px-6 md:px-12 py-32">
+          <div className="max-w-screen-xl mx-auto rounded-[3rem] bg-primary relative overflow-hidden px-6 md:px-12 py-24 text-center">
             {/* Mesh Gradient Pattern */}
             <div className="absolute inset-0 opacity-40 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.2)_0%,transparent_100%)]"></div>
             <div className="relative z-10 flex flex-col items-center">
@@ -203,7 +203,7 @@ export default function LandingPage() {
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link href="/auth">
-                  <button className="px-12 py-5 bg-white text-primary font-bold rounded-xl shadow-xl hover:scale-105 transition-transform cursor-pointer">
+                  <button className="px-6 md:px-12 py-5 bg-white text-primary font-bold rounded-xl shadow-xl hover:scale-105 transition-transform cursor-pointer">
                     Get Started
                   </button>
                 </Link>
@@ -215,7 +215,7 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="bg-surface">
-        <div className="flex flex-col md:flex-row justify-between items-center w-full px-12 py-10 max-w-screen-2xl mx-auto gap-6 border-t border-surface-container">
+        <div className="flex flex-col md:flex-row justify-between items-center w-full px-6 md:px-12 py-10 max-w-screen-2xl mx-auto gap-6 border-t border-surface-container">
           <div className="flex flex-col items-center md:items-start gap-2">
             <div className="text-[1.25rem] font-black text-on-surface uppercase tracking-widest">Quro</div>
             <div className="font-label text-[0.6875rem] uppercase tracking-widest text-on-surface-variant/70">© 2026 Quro. Zero-Cloud Local-First.</div>
