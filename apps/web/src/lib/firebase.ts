@@ -22,12 +22,15 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || '',
 };
 
-// Initialize Firebase (prevent re-initialization in hot reload)
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-const auth = getAuth(app);
+// Initialize Firebase only on the client side to prevent Next.js build crashes
+let app;
+let auth: any = null;
 
-// On localhost, allow Firebase test phone numbers without forcing a real SMS flow.
 if (typeof window !== 'undefined') {
+  app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+  auth = getAuth(app);
+
+  // On localhost, allow Firebase test phone numbers without forcing a real SMS flow.
   const isLocalHost =
     window.location.hostname === 'localhost' ||
     window.location.hostname === '127.0.0.1';
