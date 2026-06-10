@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { ZegoCloudWrapper } from './ZegoCloudWrapper';
+import VideoCallRoom from './VideoCallRoom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PhoneOff, Video, Phone } from 'lucide-react';
 
@@ -174,20 +174,14 @@ export default function GlobalCallListener() {
 
       {/* Connected Video Call Room */}
       {callState === 'connected' && myUser && (
-        <div className="fixed inset-0 z-[99999] bg-[#1a1b1e] flex flex-col">
-          <div className="absolute top-12 left-6 z-50">
-            <button onClick={hangUp} className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-5 py-2.5 rounded-full shadow-lg font-bold transition-transform active:scale-95">
-              <PhoneOff size={20} />
-              End Call
-            </button>
-          </div>
-          <ZegoCloudWrapper
-            roomID={roomID}
-            userID={myUser.id}
-            userName={myUser.user_metadata?.display_name || "User"}
-            callType="video"
-          />
-        </div>
+        <VideoCallRoom
+          roomID={roomID}
+          userID={myUser.id}
+          contactID={friendId!}
+          isCaller={isCaller}
+          userName={myUser.user_metadata?.display_name || "User"}
+          onLeave={hangUp}
+        />
       )}
     </>
   );

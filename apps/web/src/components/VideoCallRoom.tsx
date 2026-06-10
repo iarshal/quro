@@ -59,11 +59,26 @@ export default function VideoCallRoom({
         localStreamRef.current = stream;
         updateVideoAttachments();
 
-        // 2. Create Peer Connection
+        // 2. Create Peer Connection with robust STUN and TURN servers for long-distance/cellular NAT traversal
         const pc = new RTCPeerConnection({
           iceServers: [
             { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun1.l.google.com:19302' }
+            { urls: 'stun:stun1.l.google.com:19302' },
+            {
+              urls: 'turn:openrelay.metered.ca:80',
+              username: 'openrelayproject',
+              credential: 'openrelayproject'
+            },
+            {
+              urls: 'turn:openrelay.metered.ca:443',
+              username: 'openrelayproject',
+              credential: 'openrelayproject'
+            },
+            {
+              urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+              username: 'openrelayproject',
+              credential: 'openrelayproject'
+            }
           ]
         });
         peerConnectionRef.current = pc;
