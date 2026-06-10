@@ -59,28 +59,32 @@ export default function VideoCallRoom({
         localStreamRef.current = stream;
         updateVideoAttachments();
 
-        // 2. Create Peer Connection with robust STUN and TURN servers for long-distance/cellular NAT traversal
-        const pc = new RTCPeerConnection({
-          iceServers: [
-            { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun1.l.google.com:19302' },
-            {
-              urls: 'turn:openrelay.metered.ca:80',
-              username: 'openrelayproject',
-              credential: 'openrelayproject'
-            },
-            {
-              urls: 'turn:openrelay.metered.ca:443',
-              username: 'openrelayproject',
-              credential: 'openrelayproject'
-            },
-            {
-              urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-              username: 'openrelayproject',
-              credential: 'openrelayproject'
+        // Fetch Dedicated TURN Servers from Metered
+        let iceServers: RTCIceServer[] = [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' },
+        ];
+
+        try {
+          const meteredDomain = process.env.NEXT_PUBLIC_METERED_DOMAIN;
+          const meteredKey = process.env.NEXT_PUBLIC_METERED_API_KEY;
+          if (meteredDomain && meteredKey) {
+            const response = await fetch(`https://${meteredDomain}/api/v1/turn/credentials?apiKey=${meteredKey}`);
+            if (response.ok) {
+              const credentials = await response.json();
+              if (Array.isArray(credentials)) {
+                iceServers = credentials;
+              }
+            } else {
+              console.warn("Metered API returned an error, falling back to STUN:", await response.text());
             }
-          ]
-        });
+          }
+        } catch (e) {
+          console.error("Failed to fetch TURN credentials", e);
+        }
+
+        // 2. Create Peer Connection with robust STUN and TURN servers for long-distance/cellular NAT traversal
+        const pc = new RTCPeerConnection({ iceServers });
         peerConnectionRef.current = pc;
 
         // Add local tracks to PC

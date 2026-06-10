@@ -22,18 +22,20 @@ export default function GlobalCallListener() {
 
   useEffect(() => {
     let isMounted = true;
-    const init = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user || !isMounted) return;
-      setMyUser(user);
+    let channel: any = null;
+
+    const init = async (currentUser: any) => {
+      if (!currentUser || !isMounted) return;
+      setMyUser(currentUser);
 
       // Listen for incoming call signals via messages table
-      const channel = supabase.channel('global_calls')
+      if (channel) supabase.removeChannel(channel);
+      channel = supabase.channel(`global_calls_${currentUser.id}`)
         .on('postgres_changes', {
           event: 'INSERT',
           schema: 'public',
           table: 'messages',
-          filter: `receiver_id=eq.${user.id}`
+          filter: `receiver_id=eq.${currentUser.id}`
         }, async (payload) => {
           const msg = payload.new as any;
           
@@ -43,7 +45,7 @@ export default function GlobalCallListener() {
             setFriendId(msg.sender_id);
             setFriendProfile(profile);
             setActiveCallId(msg.id);
-            setRoomID(`room_${[user.id, msg.sender_id].sort().join('_').substring(0, 32)}`);
+            setRoomID(`room_${[currentUser.id, msg.sender_id].sort().join('_').substring(0, 32)}`);
             setIsCaller(false); // We are receiving the call
             setCallState('ringing');
           } else if (msg.type === 'video_call_accept' && callStateRef.current === 'calling') {
@@ -64,14 +66,28 @@ export default function GlobalCallListener() {
           }
         })
         .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
     };
-    init();
 
-    return () => { isMounted = false; };
+    // Initial check
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) init(user);
+    });
+
+    // Listen for login/logout
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        init(session.user);
+      } else {
+        setMyUser(null);
+        if (channel) supabase.removeChannel(channel);
+      }
+    });
+
+    return () => { 
+      isMounted = false; 
+      if (channel) supabase.removeChannel(channel);
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
   // Listen for outgoing call triggers from any page
