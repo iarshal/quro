@@ -1,22 +1,38 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquare, Users, UserRound, Plus, Search } from 'lucide-react';
 import { ChatsTab } from './tabs/ChatsTab';
 import { ContactsTab } from './tabs/ContactsTab';
 import { MeTab } from './tabs/MeTab';
+import { t } from '../lib/i18n';
 
 type Tab = 'chats' | 'contacts' | 'me';
 
 export function ResponsiveLayout({ profile }: { profile: any }) {
-  const [activeTab, setActiveTab] = useState<Tab>('chats');
+  const searchParams = useSearchParams();
+  const [activeTab, setActiveTab] = useState<Tab>((searchParams.get('tab') as Tab) || 'chats');
+  const [appLang, setAppLang] = useState(profile?.quro_app_lang || 'English');
+
+  useEffect(() => {
+    const updateLang = () => {
+      if (typeof window !== 'undefined') {
+        const stored = localStorage.getItem('quro_app_lang');
+        if (stored) setAppLang(stored);
+      }
+    };
+    updateLang();
+    window.addEventListener('language_changed', updateLang);
+    return () => window.removeEventListener('language_changed', updateLang);
+  }, []);
 
   // WeChat Tab Configuration
   const tabs = [
-    { id: 'chats', label: 'Chats', icon: MessageSquare },
-    { id: 'contacts', label: 'Contacts', icon: Users },
-    { id: 'me', label: 'Me', icon: UserRound },
+    { id: 'chats', label: t('Chats', appLang), icon: MessageSquare },
+    { id: 'contacts', label: t('Contacts', appLang), icon: Users },
+    { id: 'me', label: t('Me', appLang), icon: UserRound },
   ];
 
   const renderContent = () => {

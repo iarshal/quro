@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabaseClient';
 import { ResponsiveLayout } from '../../components/ResponsiveLayout';
-import { Loader2 } from 'lucide-react';
+import { Loader2, MessageSquare } from 'lucide-react';
 
 export default function ChatDashboardPage() {
   const router = useRouter();
@@ -14,7 +14,7 @@ export default function ChatDashboardPage() {
   useEffect(() => {
     async function checkAuthAndLoadProfile() {
       const { data: { session } } = await supabase.auth.getSession();
-      
+
       if (!session) {
         router.push('/auth');
         return;
@@ -33,8 +33,7 @@ export default function ChatDashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen w-full bg-surface">
-        <Loader2 className="animate-spin text-primary" size={48} />
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', width: '100vw', backgroundColor: '#EDEDED' }}>
       </div>
     );
   }

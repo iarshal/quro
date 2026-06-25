@@ -77,15 +77,15 @@ export default function SettingsPage() {
         </div>
 
         <div className="mt-8 bg-white border-y border-gray-200">
-          <button 
+          <button
             onClick={handleLogout}
             className="w-full flex items-center justify-center px-4 py-4 active:bg-gray-50 transition-colors border-b border-gray-100"
           >
             <LogOut size={20} className="text-black mr-2" />
             <span className="text-black text-[17px] font-semibold">Log Out</span>
           </button>
-          
-          <button 
+
+          <button
             onClick={() => setShowDeleteModal(true)}
             className="w-full flex items-center justify-center px-4 py-4 active:bg-gray-50 transition-colors"
           >
@@ -99,7 +99,7 @@ export default function SettingsPage() {
       <AnimatePresence>
         {showDeleteModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
@@ -112,13 +112,13 @@ export default function SettingsPage() {
               <p className="text-gray-500 text-center mb-4 text-[15px] leading-relaxed">
                 This action is irreversible. All your messages, connections, and profile data will be permanently removed.
               </p>
-              
+
               <div className="w-full mb-6">
                 <p className="text-sm font-semibold text-gray-700 mb-2">
                   Type <span className="text-red-500 font-bold">I PERMANENTLY DELETE MY ACCOUNT</span> below to confirm:
                 </p>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={deleteInput}
                   onChange={(e) => setDeleteInput(e.target.value)}
                   placeholder="Type here..."
@@ -127,13 +127,13 @@ export default function SettingsPage() {
               </div>
 
               <div className="flex gap-3 w-full">
-                <button 
+                <button
                   onClick={() => { setShowDeleteModal(false); setDeleteInput(''); }}
                   className="flex-1 py-3 bg-gray-100 text-black font-semibold rounded-xl active:bg-gray-200"
                 >
                   Cancel
                 </button>
-                <button 
+                <button
                   onClick={handleDeleteAccount}
                   disabled={deleteInput !== 'I PERMANENTLY DELETE MY ACCOUNT' || isDeleting}
                   className="flex-1 py-3 bg-red-500 text-white font-semibold rounded-xl active:bg-red-600 disabled:opacity-50 disabled:active:bg-red-500 transition-opacity"

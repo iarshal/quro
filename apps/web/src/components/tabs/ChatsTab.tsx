@@ -149,7 +149,11 @@ export function ChatsTab({ profile }: { profile: any }) {
               key={friend.id}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              onClick={() => router.push(`/chat/${friend.id}`)}
+              onClick={() => {
+                globalCachedFriends = globalCachedFriends.map(f => f.id === friend.id ? { ...f, unreadCount: 0 } : f);
+                setFriends(globalCachedFriends);
+                router.push(`/chat/${friend.id}`);
+              }}
               className="flex items-center px-4 py-3 bg-white active:bg-gray-100 cursor-pointer border-b border-gray-100"
             >
               <div className="w-[50px] h-[50px] rounded-full bg-gray-200 overflow-hidden shrink-0 border border-black/5 flex items-center justify-center">
