@@ -313,6 +313,13 @@ export default function RealChatPage() {
   }, [isTypingLocal, isRecording, myUser, mounted]);
 
   const isInitialScrollRef = useRef(true);
+  const currentFriendIdRef = useRef(friendId);
+
+  // Reset initial scroll when changing chats
+  if (currentFriendIdRef.current !== friendId) {
+    isInitialScrollRef.current = true;
+    currentFriendIdRef.current = friendId;
+  }
 
   // Scroll to bottom
   useEffect(() => {
@@ -327,22 +334,27 @@ export default function RealChatPage() {
           });
         }, 100);
       } else {
-        // Snap to the bottom instantly on first load, use timeout to ensure DOM layout is complete
-        setTimeout(() => {
+        isInitialScrollRef.current = false;
+        // Snap to the bottom instantly on first load, use aggressive polling to ensure DOM layout is complete
+        const attemptScroll = (attempts = 0) => {
           requestAnimationFrame(() => {
             if (endRef.current) {
               endRef.current.scrollIntoView({ behavior: "instant", block: "end" });
             }
-            setIsScrolled(true);
-            isInitialScrollRef.current = false;
+            if (attempts === 0) setIsScrolled(true);
+            
+            if (attempts < 5) {
+              setTimeout(() => attemptScroll(attempts + 1), 100);
+            }
           });
-        }, 100); // 100ms ensures React finishes mounting the DOM nodes before we snap
+        };
+        attemptScroll(0);
       }
     } else if (!isLoadingMessages && messages.length === 0) {
       setIsScrolled(true);
       isInitialScrollRef.current = false;
     }
-  }, [messages.length, isRecording, isLoadingMessages]);
+  }, [messages.length, isRecording, isLoadingMessages, friendId]);
 
   const handleSend = async () => {
     if (!input.trim() || !myUser) return;
